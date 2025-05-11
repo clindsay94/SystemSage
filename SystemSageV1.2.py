@@ -1,8 +1,9 @@
-# Python Software Inventory & Path Validator v10.1
+# Python Software Inventory & Path Validator v1.2
 # This script queries the Windows Registry to list installed software,
 # validates installation paths, calculates disk usage for valid paths,
 # and outputs to console, JSON, and Markdown.
-# V10.1:
+# V1.2:
+# - Output files (JSON, Markdown) are now saved into an "output" subdirectory.
 # - Fixed SyntaxWarning for invalid escape sequence in Markdown output.
 # - Introduced argparse for command-line arguments.
 # - Enhanced "Remarks" for more actionable insights.
@@ -21,6 +22,7 @@ DEFAULT_OUTPUT_JSON = True
 DEFAULT_OUTPUT_MARKDOWN = True
 DEFAULT_MARKDOWN_INCLUDE_COMPONENTS = True 
 DEFAULT_CONSOLE_INCLUDE_COMPONENTS = False
+DEFAULT_OUTPUT_DIR = "output" # V1.2: Default output directory name
 
 COMPONENT_KEYWORDS = [
     "driver", "sdk", "runtime", "redistributable", "pack", "update for",
@@ -252,17 +254,23 @@ def get_installed_software(calculate_disk_usage_flag):
             
     return sorted(software_list, key=lambda x: str(x.get('DisplayName','')).lower())
 
-def output_to_json(software_list, filename="system_sage_inventory.json"):
+def output_to_json(software_list, output_dir, filename="system_sage_inventory.json"): # V1.2: Added output_dir
+    """Saves the software list to a JSON file in the specified output directory."""
     try:
-        with open(filename, 'w', encoding='utf-8') as f:
+        os.makedirs(output_dir, exist_ok=True) # V1.2: Create output directory if it doesn't exist
+        full_path = os.path.join(output_dir, filename)
+        with open(full_path, 'w', encoding='utf-8') as f:
             json.dump(software_list, f, ensure_ascii=False, indent=4)
-        print(f"\nInventory successfully saved to {filename}")
+        print(f"\nInventory successfully saved to {full_path}")
     except Exception as e:
-        print(f"Error saving JSON file: {e}")
+        print(f"Error saving JSON file to {output_dir}: {e}")
 
-def output_to_markdown(software_list, filename="system_sage_inventory.md", include_components=False):
+def output_to_markdown(software_list, output_dir, filename="system_sage_inventory.md", include_components=False): # V1.2: Added output_dir
+    """Saves the software list to a Markdown file in the specified output directory."""
     try:
-        with open(filename, 'w', encoding='utf-8') as f:
+        os.makedirs(output_dir, exist_ok=True) # V1.2: Create output directory if it doesn't exist
+        full_path = os.path.join(output_dir, filename)
+        with open(full_path, 'w', encoding='utf-8') as f:
             f.write(f"# System Sage Software Inventory - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
             
             header = "| Application Name | Version | Publisher | Install Path | Size | Status | Remarks | Source Hive | Registry Key Path |\n"
@@ -275,7 +283,6 @@ def output_to_markdown(software_list, filename="system_sage_inventory.md", inclu
             for app in software_list:
                 if app.get('Category') == "Application":
                     app_count +=1
-                    # V10.1: Correctly escape pipe for Markdown
                     name = str(app.get('DisplayName', 'N/A')).replace('|', '\\|') 
                     version = str(app.get('DisplayVersion', 'N/A')).replace('|', '\\|')
                     publisher = str(app.get('Publisher', 'N/A')).replace('|', '\\|')
@@ -297,7 +304,6 @@ def output_to_markdown(software_list, filename="system_sage_inventory.md", inclu
                 for app in software_list:
                     if app.get('Category') == "Component/Driver":
                         comp_count +=1
-                        # V10.1: Correctly escape pipe for Markdown
                         name = str(app.get('DisplayName', 'N/A')).replace('|', '\\|')
                         version = str(app.get('DisplayVersion', 'N/A')).replace('|', '\\|')
                         publisher = str(app.get('Publisher', 'N/A')).replace('|', '\\|')
@@ -324,9 +330,10 @@ def output_to_markdown(software_list, filename="system_sage_inventory.md", inclu
             f.write("- **Batch Actions:** For multiple selected items (e.g., multiple confirmed orphans), allow for batch processing of actions like registry key deletion (with appropriate safeguards and confirmations).\n\n")
             f.write("*Disclaimer: Modifying the Windows Registry carries risks. Future interactive features will be designed with safety and user confirmation as top priorities. Always ensure you have backups before making significant system changes.*\n")
 
-        print(f"Inventory successfully saved to {filename}")
+        print(f"Inventory successfully saved to {full_path}")
     except Exception as e:
-        print(f"Error saving Markdown file: {e}")
+        print(f"Error saving Markdown file to {output_dir}: {e}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="System Sage - Software Inventory and Path Validator.")
@@ -351,46 +358,25 @@ if __name__ == "__main__":
         default=DEFAULT_OUTPUT_MARKDOWN,
         help="Disable Markdown file output."
     )
+    # V1.2: Added argument for output directory
     parser.add_argument(
-        "--md-all", # V10.1: Corrected help text to reflect default
-        action="store_true", 
-        dest="markdown_include_components",
-        # default=DEFAULT_MARKDOWN_INCLUDE_COMPONENTS, # Default is now handled by action="store_true" if not present
-        help=f"Include components/drivers in the Markdown report. If not set, defaults to {'True' if DEFAULT_MARKDOWN_INCLUDE_COMPONENTS else 'False'}."
+        "--output-dir",
+        type=str,
+        default=DEFAULT_OUTPUT_DIR,
+        help=f"Specify the directory for output files (default: {DEFAULT_OUTPUT_DIR})."
     )
-    # Ensure the default for markdown_include_components is set if the flag isn't used.
-    # The 'default' in add_argument for store_true/store_false sets the value if the flag is NOT present.
-    # If store_true, it's False by default, True if flag is present.
-    # If store_false, it's True by default, False if flag is present.
-    # We want --md-all to make it True, and if flag is absent, use DEFAULT_MARKDOWN_INCLUDE_COMPONENTS.
-    # This is a bit tricky with argparse defaults for store_true. Let's adjust.
-    # A common way is to set the default to the opposite of what the flag implies,
-    # or check for None after parsing if a more complex default logic is needed.
-    # For simplicity, let's ensure the help text is clear and the default variable is used if the arg isn't touched.
-    # The current setup for --md-all (action="store_true", default=DEFAULT_MARKDOWN_INCLUDE_COMPONENTS)
-    # means if --md-all is NOT given, args.markdown_include_components will be DEFAULT_MARKDOWN_INCLUDE_COMPONENTS.
-    # If --md-all IS given, args.markdown_include_components will be True. This should be okay.
-    # Let's make default for --md-all False, and if user specifies it, it becomes True.
-    # And then use the DEFAULT_MARKDOWN_INCLUDE_COMPONENTS only if we want to override argparse's natural default.
-    # For clarity:
-    # If --md-all is present, markdown_include_components = True
-    # If --md-all is NOT present, markdown_include_components = False (because action="store_true" default is False)
-    # We'll use the DEFAULT_MARKDOWN_INCLUDE_COMPONENTS to set the initial state of args.
-    
-    # Let's re-evaluate the argparse for --md-all and --console-all for clarity on defaults
     parser.add_argument(
         "--md-include-components",
         action="store_true",
-        dest="markdown_include_components_flag", # Use a different dest
+        dest="markdown_include_components_flag", 
         help="Explicitly include components/drivers in the Markdown report."
     )
     parser.add_argument(
         "--md-no-components",
         action="store_true",
-        dest="markdown_no_components_flag", # Use a different dest
+        dest="markdown_no_components_flag", 
         help="Explicitly exclude components/drivers from the Markdown report (overrides default)."
     )
-
     parser.add_argument(
         "--console-include-components",
         action="store_true",
@@ -406,7 +392,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Determine final boolean values for component inclusion
     if args.markdown_include_components_flag:
         final_markdown_include_components = True
     elif args.markdown_no_components_flag:
@@ -421,8 +406,7 @@ if __name__ == "__main__":
     else:
         final_console_include_components = DEFAULT_CONSOLE_INCLUDE_COMPONENTS
 
-
-    print("Software Inventory and Path Validator v10.1") 
+    print("Software Inventory and Path Validator v1.2")
     print("=" * 40)
     
     if args.calculate_disk_usage:
@@ -433,7 +417,7 @@ if __name__ == "__main__":
     all_software = get_installed_software(args.calculate_disk_usage) 
     print("Scan complete.")
 
-    if final_console_include_components: # V10.1: Use final decided flag
+    if final_console_include_components: 
         console_apps_to_display = all_software
         print(f"\nFound {len(console_apps_to_display)} total entries (including components/drivers):\n")
     else:
@@ -475,12 +459,12 @@ if __name__ == "__main__":
         else:
             print("No primary applications found (or all were filtered as components/drivers). Try --console-include-components to see all entries.")
 
-
+    # V1.2: Use args.output_dir for file paths
     if args.output_json: 
-        output_to_json(all_software) 
+        output_to_json(all_software, args.output_dir) 
     
     if args.output_markdown: 
-        output_to_markdown(all_software, include_components=final_markdown_include_components) # V10.1: Use final
+        output_to_markdown(all_software, args.output_dir, include_components=final_markdown_include_components) 
 
     print("\n" + "=" * 40)
     print("Script finished.")
