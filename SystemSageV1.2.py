@@ -318,17 +318,20 @@ def output_to_markdown(software_list, output_dir, filename="system_sage_inventor
                      f.write("| No components/drivers found or filtering disabled. | | | | | | | | |\n")
             
             f.write("\n## Future Interactive Features (Planned)\n")
-            f.write("The following features are planned for future versions of System Sage to allow for interactive management:\n\n")
-            f.write("- **Orphaned Entry Review:** For items marked with 'Potential Orphan?' or 'Registry entry only?', System Sage will offer an option to:\n")
-            f.write("  - Attempt to locate related files/folders on disk (potentially using an external search tool if available).\n")
-            f.write("  - View detailed registry information.\n")
-            f.write("  - (With explicit user confirmation) Securely back up and then delete the selected registry key.\n")
-            f.write("- **Broken Path Resolution:** For items with 'Broken install path':\n")
-            f.write("  - Allow the user to browse and select the correct installation path.\n")
-            f.write("  - (With explicit user confirmation) Update the 'InstallLocation' value in the registry.\n")
-            f.write("- **Advanced Filtering & Sorting:** More options to filter and sort the displayed/reported software list based on various criteria (e.g., disk size, last used - if discoverable, category).\n")
-            f.write("- **Batch Actions:** For multiple selected items (e.g., multiple confirmed orphans), allow for batch processing of actions like registry key deletion (with appropriate safeguards and confirmations).\n\n")
-            f.write("*Disclaimer: Modifying the Windows Registry carries risks. Future interactive features will be designed with safety and user confirmation as top priorities. Always ensure you have backups before making significant system changes.*\n")
+            f.write("The following interactive features are planned for future versions of System Sage, focusing on direct user management capabilities:\n\n")
+            f.write("### Interactive Features & Management\n")
+            f.write("- **Interactive Orphan/Bad Path Management:**\n")
+            f.write("  - Guided review for entries flagged as \"Potential Orphan?\" or \"Broken install path.\"\n")
+            f.write("  - Tools to attempt automated file system searches for orphaned entries.\n")
+            f.write("  - User-confirmed actions to update incorrect `InstallLocation` values in the registry.\n")
+            f.write("  - User-confirmed actions to securely back up and offer deletion of orphaned registry keys.\n")
+            f.write("- **Desktop Shortcut Management:**\n")
+            f.write("  - List and analyze desktop shortcuts (.lnk files).\n")
+            f.write("  - Flag broken shortcuts or those pointing to uninstalled applications.\n")
+            f.write("  - Offer interactive options to clean up or repair problematic shortcuts.\n")
+            # Add other top-level items from README's "Interactive Features & Management" if they fit the "direct output" context.
+            # For now, the above two are the most direct from the README's section.
+            f.write("\n*Disclaimer: Modifying the Windows Registry or file system carries risks. Future interactive features will be designed with safety and user confirmation as top priorities. Always ensure you have backups before making significant system changes.*\n")
 
         print(f"Inventory successfully saved to {full_path}")
     except Exception as e:
