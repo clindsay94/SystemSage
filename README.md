@@ -1,40 +1,40 @@
-# System Sage - V2.1 (OCL Integration)
+# System Sage - V2.2 (Enhanced DevEnvAudit Integration)
 
 **Your intelligent PC software inventory, developer environment, and overclocking logbook analysis tool.**
 
-System Sage is a Python application with a Graphical User Interface (GUI) designed to provide users with a comprehensive understanding and management suite for their Windows system. It now integrates:
+System Sage is a Python application with a Graphical User Interface (GUI) designed to provide users with a comprehensive understanding and management suite for their Windows system. It integrates three core modules:
 1.  **System Inventory:** Queries the Windows Registry for installed software, validates paths, and calculates disk usage.
-2.  **Developer Environment Audit (DevEnvAudit):** Analyzes development tools, configurations, and potential issues.
-3.  **Overclocker's Logbook (OCL):** Manages overclocking profiles and logs, leveraging a local SQLite database.
+2.  **Developer Environment Audit (DevEnvAudit):** A powerful module that analyzes development tools, configurations, environment variables, and potential issues in your dev setup. Its results are displayed in detail within a dedicated GUI tab and included in combined system reports.
+3.  **Overclocker's Logbook (OCL):** Manages overclocking profiles and logs, leveraging a local SQLite database, with its own dedicated GUI tab.
 
 This project is primarily developed by Connor Lindsay (clindsay94) with Gemini AI assistance.
 
 ## Core Features
 
-*   **Graphical User Interface (GUI):** System Sage now runs as a GUI application, providing a user-friendly way to initiate scans and view results in organized tabs for System Inventory, Developer Environment Audit, and Overclocker's Logbook.
-*   **Comprehensive Software Inventory:** Scans multiple registry hives (`HKEY_LOCAL_MACHINE` for 64-bit and 32-bit apps, and `HKEY_CURRENT_USER`) for installed applications and components. (Via System Inventory scan)
-*   **Developer Environment Audit:** Integrates functionality from DevEnvAudit to:
-    *   Identify installed development tools (IDEs, languages, SDKs, etc.) and their versions.
-    *   Collect and analyze system and user environment variables.
-    *   Detect common issues and misconfigurations in a development setup.
+*   **Graphical User Interface (GUI):** System Sage now runs as a GUI application, providing a user-friendly way to initiate scans and view results in organized tabs for "System Inventory," "Developer Environment Audit," and "Overclocker's Logbook."
+*   **Comprehensive Software Inventory:**
+    *   Scans multiple registry hives for installed applications and components.
+    *   Validates installation paths and calculates disk usage (toggleable).
+    *   Categorizes entries and provides actionable remarks (orphans, broken paths, launcher hints).
+*   **In-Depth Developer Environment Audit (via integrated DevEnvAudit module):**
+    *   Identifies a wide range of installed development tools (IDEs, languages, SDKs, VCS, etc.) and their versions.
+    *   Collects and analyzes system and user environment variables, highlighting potential issues (e.g., incorrect PATH entries).
+    *   Detects common issues and misconfigurations in development setups.
+    *   Results (detected tools, environment variables, issues) are displayed in structured Treeview tables within the "Developer Environment Audit" GUI tab.
+    *   Current DevEnvAudit configuration (scan paths, exclusions) can be viewed within its GUI tab.
+    *   (Planned: Filtering and sorting options for DevEnvAudit results).
 *   **Overclocker's Logbook (OCL) Module Integration:**
     *   Manages overclocking profiles (BIOS/UEFI settings, memory timings, CPU OC, etc.).
-    *   Allows viewing a list of profiles, their details (settings and logs).
-    *   Supports creating new (simplified) profiles and adding log entries to existing ones.
-    *   Profile data is stored in a local SQLite database (`ocl_module_src/system_sage_olb.db`).
-    *   Includes a placeholder for future PC-to-Android profile synchronization.
-    *   The OCL module's API and architecture are documented in `docs/architecture.md`.
-*   **Path Validation & Disk Usage:** Checks registry `InstallLocation` paths and can calculate disk space for installed software (toggleable for speed).
-*   **Categorization & Remarks:** Intelligently categorizes software vs. components and provides actionable remarks (e.g., potential orphans, broken paths, game launcher hints).
-*   **Combined Reporting (Intended, but with issues):**
-    *   JSON & Markdown report generation is available via the GUI.
-    *   These reports include System Inventory and DevEnvAudit data.
-    *   *Known Issue:* Integration of OCL profile summaries into these reports was attempted but not successfully implemented due to subtask execution errors.
+    *   View profile lists, details (settings & logs), create new (simplified) profiles, and add log entries.
+    *   Data stored in a local SQLite database (`ocl_module_src/system_sage_olb.db`).
+    *   Placeholder for future PC-to-Android profile synchronization.
+    *   OCL API and architecture documented in `docs/architecture.md`.
+*   **Combined Reporting:**
+    *   Generate comprehensive JSON and Markdown reports via the GUI ("File" > "Save Combined Report").
+    *   Reports include full data from System Inventory and Developer Environment Audit scans.
 *   **Externalized Configuration:**
-    *   SystemSage component keywords: `systemsage_component_keywords.json`.
-    *   SystemSage launcher hints: `systemsage_launcher_hints.json`.
-    *   DevEnvAudit tool definitions: `devenvaudit_src/tools_database.json`.
-    *   DevEnvAudit configuration: `devenvaudit_src/devenvaudit_config.json`.
+    *   SystemSage keywords/hints: `systemsage_component_keywords.json`, `systemsage_launcher_hints.json`.
+    *   DevEnvAudit settings: `devenvaudit_src/devenvaudit_config.json`, `devenvaudit_src/tools_database.json`, `devenvaudit_src/software categorization database.json`.
 *   **Error Handling:** Includes error handling for registry access, file operations, and scan processes.
 
 ## How to Run System Sage
@@ -42,9 +42,9 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
 1.  **Prerequisites:**
     *   Python 3.x installed on your Windows system (Tkinter support is usually included).
     *   The script `SystemSageV1.2.py` (or the latest version).
-    *   The `devenvaudit_src` directory and its contents.
-    *   The `ocl_module_src` directory and its contents (from the `feature/system-sage-refactor` branch of `clindsay94/Overclockers-Logbook`).
-    *   Configuration files (defaults are used if missing for some): `systemsage_component_keywords.json`, `systemsage_launcher_hints.json`.
+    *   The `devenvaudit_src/` directory and its contents (all DevEnvAudit module files).
+    *   The `ocl_module_src/` directory and its contents.
+    *   Relevant JSON configuration files (defaults may apply if some are missing).
 
 2.  **Open a Command Prompt or PowerShell.**
 3.  **Navigate to the directory** where SystemSage files are saved.
@@ -56,37 +56,44 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
 
 ## Using the GUI
 
-*   **Main Window:** Tabs for "System Inventory", "Developer Environment Audit", and "Overclocker's Logbook".
-*   **Running Scans:** Use the "Scan" menu for System Inventory and DevEnv Audit. OCL profiles are managed within their tab (e.g., "Refresh Profile List").
-*   **Saving Reports:** "File" > "Save Combined Report (JSON & MD)" saves System Inventory and DevEnvAudit data. OCL data is managed separately via its GUI elements.
+*   **Main Window:** Tabs for "System Inventory," "Developer Environment Audit," and "Overclocker's Logbook."
+*   **Running Scans:**
+    *   Use the "Scan" menu to start "System Inventory Scan" or "Run DevEnv Audit."
+    *   Scan progress updates in the status bar. Results populate the respective tabs.
+    *   For DevEnvAudit, view its current configuration via the "View/Refresh Loaded Configuration" button in its tab.
+*   **OCL Profiles:** Managed within the "Overclocker's Logbook" tab (refresh list, view details, save new, add log).
+*   **Saving Reports:** "File" > "Save Combined Report (JSON & MD)" saves System Inventory and DevEnvAudit data.
 
 ## Command-Line Options
 
-While System Sage V2.1 is primarily a GUI application, some command-line options can influence its initial behavior or default settings used by the GUI:
+While System Sage is primarily GUI-driven, some CLI options can set initial defaults for GUI operations:
+*   `--output-dir <directory_name>`: Default output directory for reports.
+*   `--no-disk-usage`: Affects System Inventory's disk usage calculation default.
+*   `--md-include-components` / `--md-no-components`: Default for System Inventory components in Markdown.
+*   `--run-devenv-audit`: GUI initiated; flag noted but no separate CLI scan.
+*   `--help`: Shows CLI help and exits.
 
-*   `--output-dir <directory_name>`: Sets the default directory initially proposed when saving reports. (Default: "output")
-*   `--no-disk-usage`: System Inventory scans run from the GUI currently use this flag's value to determine if disk usage should be calculated.
-*   `--md-include-components` / `--md-no-components`: Influences whether SystemSage's own components list is detailed in the Markdown report by default.
-*   `--run-devenv-audit`: The DevEnvAudit scan is now initiated via the GUI. This flag is noted by the GUI but doesn't trigger a separate CLI scan.
-*   `--help`: Shows a help message listing all available options and exit (this will still work before the GUI launches).
-
-*Note: Direct generation of JSON/Markdown reports from the command line without launching the GUI is not the primary mode of operation for V2.1.*
+*Note: Direct CLI report generation without GUI is not a primary feature of this version.*
 
 ## Known Issues & Omissions (This iteration)
 
-*   **OCL Combined Report Data:** Summaries of OCL profiles are not included in the main JSON/Markdown reports due to subtask execution issues during implementation.
-*   **Unit Tests for OCL Integration:** These were planned but not successfully implemented due to subtask execution issues.
-*   **README.txt Outdated:** The old `README.txt` file is outdated. This `README.md` is the current documentation.
+*   **DevEnvAudit HTML Report Formatting:** The planned refactor of `devenvaudit_src/report_generator.py` to improve HTML data serialization (especially for complex/nested data) was not successfully implemented due to persistent tool errors during file modification attempts. HTML reports from DevEnvAudit might not render complex data structures optimally.
+*   **OCL Data in Combined Reports:** Summaries of OCL profiles are NOT included in the main JSON/Markdown reports due to persistent tool errors preventing the necessary code changes.
+*   **Unit Tests for OCL Integration:** Were NOT implemented due to persistent tool errors preventing test file creation/modification.
+*   **Unit Tests for DevEnvAudit Integration:** (Planned for this version, status pending).
+*   **`README.txt` Outdated:** The old `README.txt` file is outdated. This `README.md` is the current primary documentation.
 
 ## Future Planned Features
 
-*   Full implementation of "Save Current System Configuration as New OCL Profile" with actual system data.
+*   Full implementation of "Save Current System Configuration as New OCL Profile" with actual system data capture.
 *   Full implementation of "Update Selected OCL Profile" with detailed editing capabilities.
 *   OCL Profile Synchronization (PC-to-Android).
-*   Interactive Orphan/Bad Path Management for System Inventory.
-*   Advanced Filtering & Sorting in GUI for all data types.
-*   Configuration GUI for managing settings.
-*   Refined CLI Mode for automation.
+*   Filtering/Sorting for DevEnvAudit results in GUI.
+*   Editable DevEnvAudit configuration in GUI.
+*   Interactive Orphan/Bad Path Management (System Inventory).
+*   Advanced Filtering & Sorting in GUI (System Inventory).
+*   Configuration GUI for all settings.
+*   Refined CLI Mode.
 *   Executable Bundling.
 
 ## Development & Acknowledgements

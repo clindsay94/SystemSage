@@ -14,7 +14,7 @@ import winreg
 import os
 import json
 import datetime
-import argparse 
+import argparse
 import logging # Added for DevEnvAudit integration
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog # Added filedialog
@@ -52,13 +52,13 @@ def load_json_config(filename, default_data):
 DEFAULT_CALCULATE_DISK_USAGE = True
 DEFAULT_OUTPUT_JSON = True
 DEFAULT_OUTPUT_MARKDOWN = True
-DEFAULT_MARKDOWN_INCLUDE_COMPONENTS = True 
+DEFAULT_MARKDOWN_INCLUDE_COMPONENTS = True
 DEFAULT_CONSOLE_INCLUDE_COMPONENTS = False
 DEFAULT_OUTPUT_DIR = "output" # V1.2: Default output directory name
 
 DEFAULT_COMPONENT_KEYWORDS = [
     "driver", "sdk", "runtime", "redistributable", "pack", "update for",
-    "component", "service", "host", "framework", "module", "tool", 
+    "component", "service", "host", "framework", "module", "tool",
     "package", "library", "interface", "provider", "kit", "utility",
     "microsoft .net", "visual c++", "windows sdk", "directx", "vulkan",
     "intel(r) graphics", "nvidia graphics", "amd chipset", "realtek",
@@ -77,8 +77,8 @@ DEFAULT_LAUNCHER_HINTS = {
     "Battle.net Game": {"publishers": ["blizzard entertainment"], "paths": ["battle.net"]},
     "EA App Game": {"publishers": ["electronic arts"], "paths": ["ea app", "origin games"]},
     "Ubisoft Connect Game": {"publishers": ["ubisoft"], "paths": ["ubisoft game launcher"]},
-    "Xbox Game": {"publishers": ["microsoft"], "paths": ["windowsapps", "xboxgames"]}, 
-    "Microsoft Store App": {"publishers": [], "paths": ["windowsapps"]}, 
+    "Xbox Game": {"publishers": ["microsoft"], "paths": ["windowsapps", "xboxgames"]},
+    "Microsoft Store App": {"publishers": [], "paths": ["windowsapps"]},
 }
 
 # Load configurations from JSON files, falling back to defaults
@@ -111,8 +111,8 @@ def get_hkey_name(hkey_root):
 
 def get_directory_size(directory_path, calculate_disk_usage_flag):
     total_size = 0
-    if not calculate_disk_usage_flag: 
-        return 0 
+    if not calculate_disk_usage_flag:
+        return 0
     try:
         for dirpath, dirnames, filenames in os.walk(directory_path):
             for f in filenames:
@@ -121,19 +121,19 @@ def get_directory_size(directory_path, calculate_disk_usage_flag):
                     try:
                         total_size += os.path.getsize(fp)
                     except OSError:
-                        pass 
-    except OSError as e: 
+                        pass
+    except OSError as e:
         raise DirectorySizeError(f"Error accessing directory {directory_path}: {e}") from e
     return total_size
 
 def format_size(size_bytes, calculate_disk_usage_flag):
-    if not calculate_disk_usage_flag and size_bytes == 0: 
+    if not calculate_disk_usage_flag and size_bytes == 0:
         return "Not Calculated"
-    if size_bytes < 0: 
-        return "N/A (Error)" 
-    if size_bytes == 0: 
+    if size_bytes < 0:
+        return "N/A (Error)"
+    if size_bytes == 0:
         return "0 B" if calculate_disk_usage_flag else "Not Calculated"
-        
+
     size_name = ("B", "KB", "MB", "GB", "TB")
     i = 0
     while size_bytes >= 1024 and i < len(size_name)-1 :
@@ -155,7 +155,7 @@ def get_installed_software(calculate_disk_usage_flag):
         try:
             with winreg.OpenKey(hkey_root, path_suffix) as uninstall_key:
                 for i in range(winreg.QueryInfoKey(uninstall_key)[0]):
-                    subkey_name = "" 
+                    subkey_name = ""
                     try:
                         subkey_name = winreg.EnumKey(uninstall_key, i)
                         full_reg_key_path = f"{get_hkey_name(hkey_root)}\\{path_suffix}\\{subkey_name}"
@@ -164,15 +164,15 @@ def get_installed_software(calculate_disk_usage_flag):
                             app_details = {
                                 'SourceHive': hive_display_name,
                                 'RegistryKeyPath': full_reg_key_path,
-                                'InstallLocationSize': "N/A" if calculate_disk_usage_flag else "Not Calculated", 
-                                'Remarks': "" 
+                                'InstallLocationSize': "N/A" if calculate_disk_usage_flag else "Not Calculated",
+                                'Remarks': ""
                             }
-                            
+
                             try:
                                 app_details['DisplayName'] = str(winreg.QueryValueEx(app_key, "DisplayName")[0])
                             except FileNotFoundError:
-                                app_details['DisplayName'] = subkey_name 
-                            except OSError as e: 
+                                app_details['DisplayName'] = subkey_name
+                            except OSError as e:
                                 app_details['DisplayName'] = f"{subkey_name} (Name Error: {e.strerror})"
 
                             entry_id_name = app_details['DisplayName']
@@ -183,71 +183,71 @@ def get_installed_software(calculate_disk_usage_flag):
                                 entry_id_version = app_details['DisplayVersion']
                             except FileNotFoundError:
                                 app_details['DisplayVersion'] = "N/A"
-                            except OSError as e: 
+                            except OSError as e:
                                 app_details['DisplayVersion'] = f"Version Error: {e.strerror}"
-                            
+
                             entry_id = (entry_id_name, entry_id_version)
                             if entry_id in processed_entries:
-                                continue 
+                                continue
                             processed_entries.add(entry_id)
 
                             try:
                                 app_details['Publisher'] = str(winreg.QueryValueEx(app_key, "Publisher")[0])
                             except FileNotFoundError:
                                 app_details['Publisher'] = "N/A"
-                            except OSError as e: 
+                            except OSError as e:
                                 app_details['Publisher'] = f"Publisher Error: {e.strerror}"
-                            
+
                             app_details['Category'] = "Component/Driver" if is_likely_component(app_details['DisplayName'], app_details['Publisher']) else "Application"
 
                             try:
                                 install_location_raw = winreg.QueryValueEx(app_key, "InstallLocation")[0]
-                                install_location_cleaned = str(install_location_raw) 
-                                
+                                install_location_cleaned = str(install_location_raw)
+
                                 if isinstance(install_location_raw, str):
                                     temp_location = install_location_raw.strip()
                                     if (temp_location.startswith('"') and temp_location.endswith('"')) or \
                                        (temp_location.startswith("'") and temp_location.endswith("'")):
                                         install_location_cleaned = temp_location[1:-1]
-                                
-                                app_details['InstallLocation'] = install_location_cleaned 
-                                
+
+                                app_details['InstallLocation'] = install_location_cleaned
+
                                 if install_location_cleaned and os.path.isdir(install_location_cleaned):
                                     app_details['PathStatus'] = "OK"
-                                    if calculate_disk_usage_flag: 
+                                    if calculate_disk_usage_flag:
                                         try:
-                                            dir_size = get_directory_size(install_location_cleaned, calculate_disk_usage_flag) 
+                                            dir_size = get_directory_size(install_location_cleaned, calculate_disk_usage_flag)
                                             app_details['InstallLocationSize'] = format_size(dir_size, calculate_disk_usage_flag)
                                         except DirectorySizeError as e_size:
                                             app_details['InstallLocationSize'] = "N/A (Size Error)"
                                             app_details['Remarks'] += f"Size calc error: {e_size};"
 
-                                elif install_location_cleaned and os.path.isfile(install_location_cleaned): 
+                                elif install_location_cleaned and os.path.isfile(install_location_cleaned):
                                     app_details['PathStatus'] = "OK (File)"
-                                    if calculate_disk_usage_flag: 
+                                    if calculate_disk_usage_flag:
                                         try:
                                             file_size = os.path.getsize(install_location_cleaned)
                                             app_details['InstallLocationSize'] = format_size(file_size, calculate_disk_usage_flag)
                                         except OSError:
                                             app_details['InstallLocationSize'] = "N/A (Access Error)"
-                                    app_details['Remarks'] += " InstallLocation is a file;" 
-                                elif install_location_cleaned: 
+                                    app_details['Remarks'] += " InstallLocation is a file;"
+                                elif install_location_cleaned:
                                     app_details['PathStatus'] = "Path Not Found"
-                                    app_details['Remarks'] += " Broken install path (Actionable);" 
-                                else: 
+                                    app_details['Remarks'] += " Broken install path (Actionable);"
+                                else:
                                     app_details['PathStatus'] = "No Valid Path in Registry"
                                     if app_details['Category'] == "Application":
-                                        app_details['Remarks'] += " Registry entry only (Potential Orphan?). Consider searching common install locations (e.g., Program Files) for remnants if software is unexpected.;" 
+                                        app_details['Remarks'] += " Registry entry only (Potential Orphan?). Consider searching common install locations (e.g., Program Files) for remnants if software is unexpected.;"
                             except FileNotFoundError:
                                 app_details['InstallLocation'] = "N/A"
                                 app_details['PathStatus'] = "No Path in Registry"
                                 if app_details['Category'] == "Application":
-                                     app_details['Remarks'] += " Registry entry only (Potential Orphan?). Consider searching common install locations (e.g., Program Files) for remnants if software is unexpected.;" 
-                            except OSError as e: 
+                                     app_details['Remarks'] += " Registry entry only (Potential Orphan?). Consider searching common install locations (e.g., Program Files) for remnants if software is unexpected.;"
+                            except OSError as e:
                                 app_details['InstallLocation'] = f"Path Read Error: {e.strerror}"
                                 app_details['PathStatus'] = "Error"
                                 app_details['Remarks'] += f" Error accessing install path: {e.strerror};"
-                            
+
                             current_remarks = app_details['Remarks'].strip().strip(';')
                             added_launcher_remark = False
                             publisher_lower = str(app_details.get('Publisher', '')).lower()
@@ -261,7 +261,7 @@ def get_installed_software(calculate_disk_usage_flag):
                                             matched_hint = True
                                             added_launcher_remark = True
                                             break
-                                if matched_hint: break 
+                                if matched_hint: break
                                 if "paths" in hints:
                                     for path_hint in hints["paths"]:
                                         if path_hint in location_lower:
@@ -273,15 +273,15 @@ def get_installed_software(calculate_disk_usage_flag):
                             app_details['Remarks'] = current_remarks
 
                             if app_details['Category'] == "Component/Driver" and app_details['PathStatus'] in ["No Path in Registry", "No Valid Path in Registry"]:
-                                if not added_launcher_remark and "Component" not in app_details['Remarks']: 
+                                if not added_launcher_remark and "Component" not in app_details['Remarks']:
                                      app_details['Remarks'] = (app_details['Remarks'].strip() + " Component (no specific path).").strip()
-                            
+
                             app_details['Remarks'] = app_details['Remarks'].strip(';')
 
                             if app_details['DisplayName'] and not app_details['DisplayName'].startswith('{'):
                                 software_list.append(app_details)
                     except OSError:
-                        pass 
+                        pass
                     except Exception:
                         pass
         except FileNotFoundError:
@@ -290,14 +290,14 @@ def get_installed_software(calculate_disk_usage_flag):
         except Exception as e_outer:
             print(f"An error occurred accessing registry path {hive_display_name} - {path_suffix}: {e_outer}")
             continue
-            
+
     return sorted(software_list, key=lambda x: str(x.get('DisplayName','')).lower())
 
 def output_to_json_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.json"):
     combined_data = {}
     if system_inventory_data:
         combined_data["systemInventory"] = system_inventory_data
-    
+
     if devenv_components_data or devenv_env_vars_data or devenv_issues_data:
         devenv_audit_data = {}
         if devenv_components_data:
@@ -329,7 +329,7 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
         full_path = os.path.join(output_dir, filename)
         with open(full_path, 'w', encoding='utf-8') as f:
             f.write(f"# System Sage Combined Report - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-            
+
             # --- System Inventory Section ---
             f.write("## System Software Inventory\n\n")
             if system_inventory_data:
@@ -343,22 +343,22 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                 for app in system_inventory_data:
                     if app.get('Category') == "Application":
                         app_count +=1
-                        name = str(app.get('DisplayName', 'N/A')).replace('|', '\\|') 
+                        name = str(app.get('DisplayName', 'N/A')).replace('|', '\\|')
                         version = str(app.get('DisplayVersion', 'N/A')).replace('|', '\\|')
                         publisher = str(app.get('Publisher', 'N/A')).replace('|', '\\|')
-                        location = str(app.get('InstallLocation', 'N/A')).replace('|', '\\|') 
-                        size = str(app.get('InstallLocationSize', 'N/A')).replace('|', '\\|') 
+                        location = str(app.get('InstallLocation', 'N/A')).replace('|', '\\|')
+                        size = str(app.get('InstallLocationSize', 'N/A')).replace('|', '\\|')
                         status = str(app.get('PathStatus', 'N/A')).replace('|', '\\|')
-                        remarks = str(app.get('Remarks', '')).replace('|', '\\|') 
+                        remarks = str(app.get('Remarks', '')).replace('|', '\\|')
                         hive = str(app.get('SourceHive', 'N/A')).replace('|', '\\|')
-                        reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|') 
+                        reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|')
                         f.write(f"| {name} | {version} | {publisher} | {location} | {size} | {status} | {remarks} | {hive} | {reg_key} |\n")
                 if app_count == 0:
                     f.write("| No primary applications found. | | | | | | | | |\n")
 
                 if include_system_sage_components_flag: # This flag is for System Inventory components
                     f.write("\n### Components & Drivers (System Inventory)\n")
-                    f.write(header.replace("Application Name", "Component Name")) 
+                    f.write(header.replace("Application Name", "Component Name"))
                     f.write(separator)
                     comp_count = 0
                     for app in system_inventory_data:
@@ -368,9 +368,9 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                             version = str(app.get('DisplayVersion', 'N/A')).replace('|', '\\|')
                             publisher = str(app.get('Publisher', 'N/A')).replace('|', '\\|')
                             location = str(app.get('InstallLocation', 'N/A')).replace('|', '\\|')
-                            size = str(app.get('InstallLocationSize', 'N/A')).replace('|', '\\|') 
+                            size = str(app.get('InstallLocationSize', 'N/A')).replace('|', '\\|')
                             status = str(app.get('PathStatus', 'N/A')).replace('|', '\\|')
-                            remarks = str(app.get('Remarks', '')).replace('|', '\\|') 
+                            remarks = str(app.get('Remarks', '')).replace('|', '\\|')
                             hive = str(app.get('SourceHive', 'N/A')).replace('|', '\\|')
                             reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|')
                             f.write(f"| {name} | {version} | {publisher} | {location} | {size} | {status} | {remarks} | {hive} | {reg_key} |\n")
@@ -397,7 +397,7 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                         comp_id = str(comp.id).replace('|', '\\|')
                         f.write(f"| {name} | {version} | {category} | {path} | {exe_path} | {comp_id} |\n")
                     if not devenv_components_data: f.write("| No development components detected. | | | | | |\n")
-                
+
                 if devenv_env_vars_data:
                     f.write("\n### Key Environment Variables\n")
                     env_header = "| Name | Value | Scope |\n"
@@ -406,7 +406,7 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                     f.write(env_separator)
                     for ev in devenv_env_vars_data: # Using .to_dict() is for JSON
                         name = str(ev.name).replace('|', '\\|')
-                        value = str(ev.value).replace('|', '\\|') 
+                        value = str(ev.value).replace('|', '\\|')
                         scope = str(ev.scope).replace('|', '\\|')
                         f.write(f"| {name} | {value} | {scope} |\n")
                     if not devenv_env_vars_data: f.write("| No environment variables data. | | |\n")
@@ -429,7 +429,7 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                     if not devenv_issues_data: f.write("| No issues identified by DevEnvAudit. | | | | |\n")
             else:
                 f.write("No Developer Environment Audit data available.\n")
-            
+
             f.write("\n## Future Interactive Features (Planned)\n") # This section can remain as is or be updated
             f.write("The following features are planned for future versions of System Sage to allow for interactive management:\n\n")
             f.write("- **Orphaned Entry Review:** For items marked with 'Potential Orphan?' or 'Registry entry only?', System Sage will offer an option to:\n")
@@ -452,7 +452,7 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
 def run_devenv_audit():
     print("\n" + "=" * 40)
     print("--- Starting Developer Environment Audit ---")
-    
+
     # Define simple console callbacks for DevEnvAudit
     def devenv_status_callback(message):
         print(f"[DevEnvAudit Status] {message}")
@@ -464,34 +464,34 @@ def run_devenv_audit():
         # Ensure DevEnvAudit's config directory and default config file exist if its modules expect them.
         # The modified config_manager in devenvaudit_src should now use devenvaudit_src/devenvaudit_config.json
         # So, we just need to ensure that file is present. It was part of the bundled files.
-        
+
         # Instantiate the scanner
         # Note: DevEnvAudit's EnvironmentScanner loads its own config via its config_manager.
         # We are not explicitly passing a config here, relying on the bundled devenvaudit_config.json.
         scanner = EnvironmentScanner(progress_callback=devenv_progress_callback, status_callback=devenv_status_callback)
-        
+
         print("Running DevEnvAudit scan...")
         components, env_vars, issues = scanner.run_scan()
-        
+
         print("\n--- DevEnvAudit Summary ---")
         print(f"Detected Software Components: {len(components)}")
         print(f"Collected Environment Variables: {len(env_vars)}")
         print(f"Identified Issues: {len(issues)}")
-        
+
         if components:
             print("\nTop Detected Components (DevEnvAudit):")
             for i, comp in enumerate(components[:5]): # Print top 5
                 print(f"  - {comp.name} ({comp.version or 'N/A'}) at {comp.path or 'N/A'}")
                 if i == 4 and len(components) > 5:
                     print("    ...and more.")
-        
+
         if issues:
             print("\nTop Issues (DevEnvAudit):")
             for i, issue in enumerate(issues[:5]): # Print top 5
                 print(f"  - [{issue.severity}] {issue.description} (Category: {issue.category}, Component: {issue.component_id})")
                 if i == 4 and len(issues) > 5:
                     print("    ...and more.")
-                    
+
     except ImportError as e:
         print(f"ERROR: Could not import DevEnvAudit modules: {e}")
         print("Please ensure 'devenvaudit_src' directory is present and contains the necessary files.")
@@ -526,7 +526,7 @@ class SystemSageApp(tk.Tk):
         self.ocl_refresh_button = None
         self.ocl_save_new_button = None
         self.ocl_update_selected_button = None
-        
+
         self.title("System Sage")
         self.geometry("1200x800") # Adjusted size for more content
 
@@ -540,7 +540,7 @@ class SystemSageApp(tk.Tk):
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.quit_app)
         self.menu_bar.add_cascade(label="File", menu=file_menu)
-        
+
         # Scan Menu
         self.scan_menu = tk.Menu(self.menu_bar, tearoff=0) # Store as self.scan_menu
         self.scan_menu.add_command(label="Run System Inventory Scan", command=self.start_system_inventory_scan)
@@ -554,10 +554,10 @@ class SystemSageApp(tk.Tk):
         # Tab 1: System Inventory
         inventory_tab = ttk.Frame(main_notebook)
         main_notebook.add(inventory_tab, text="System Inventory")
-        
+
         columns = ("Name", "Version", "Publisher", "Path", "Size", "Status", "Remarks", "SourceHive", "RegKey")
         self.inventory_tree = ttk.Treeview(inventory_tab, columns=columns, show="headings")
-        
+
         for col in columns:
             self.inventory_tree.heading(col, text=col)
             self.inventory_tree.column(col, width=100, anchor=tk.W) # Adjust widths as needed
@@ -639,7 +639,7 @@ class SystemSageApp(tk.Tk):
 
         # --- Top Pane: Profile List ---
         profiles_list_outer_frame = ttk.Labelframe(ocl_paned_window, text="Available Overclocking Profiles")
-        ocl_paned_window.add(profiles_list_outer_frame, weight=1) 
+        ocl_paned_window.add(profiles_list_outer_frame, weight=1)
 
         # Frame to hold treeview and its scrollbar for better packing
         profiles_list_tree_frame = ttk.Frame(profiles_list_outer_frame)
@@ -653,17 +653,17 @@ class SystemSageApp(tk.Tk):
         self.ocl_profiles_tree.column("Profile Name", width=250, anchor=tk.W)
         self.ocl_profiles_tree.heading("Last Modified", text="Last Modified")
         self.ocl_profiles_tree.column("Last Modified", width=150, anchor=tk.W)
-        
+
         ocl_profiles_vsb = ttk.Scrollbar(profiles_list_tree_frame, orient="vertical", command=self.ocl_profiles_tree.yview)
         self.ocl_profiles_tree.configure(yscrollcommand=ocl_profiles_vsb.set)
-        
+
         self.ocl_profiles_tree.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
         ocl_profiles_vsb.pack(side=tk.RIGHT, fill=tk.Y)
-        
+
         self.ocl_profiles_tree.bind("<<TreeviewSelect>>", self.on_ocl_profile_select)
 
         # --- Bottom Pane: Details & Actions ---
-        details_actions_frame = ttk.Frame(ocl_paned_window) 
+        details_actions_frame = ttk.Frame(ocl_paned_window)
         ocl_paned_window.add(details_actions_frame, weight=2)
 
         # Details Sub-Frame
@@ -673,7 +673,7 @@ class SystemSageApp(tk.Tk):
         self.ocl_profile_details_text = tk.Text(profile_details_frame, wrap=tk.WORD, state=tk.DISABLED, height=10)
         ocl_details_vsb = ttk.Scrollbar(profile_details_frame, orient="vertical", command=self.ocl_profile_details_text.yview)
         self.ocl_profile_details_text.configure(yscrollcommand=ocl_details_vsb.set)
-        
+
         self.ocl_profile_details_text.pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=(5,0), pady=5)
         ocl_details_vsb.pack(side=tk.RIGHT, fill=tk.Y, padx=(0,5), pady=5)
 
@@ -684,13 +684,13 @@ class SystemSageApp(tk.Tk):
 
         self.ocl_refresh_button = ttk.Button(actions_frame, text="Refresh Profile List", command=self.refresh_ocl_profiles_list)
         self.ocl_refresh_button.pack(side=tk.LEFT, padx=2)
-        
+
         self.ocl_save_new_button = ttk.Button(actions_frame, text="Save System as New Profile", command=self.save_system_as_new_ocl_profile)
         self.ocl_save_new_button.pack(side=tk.LEFT, padx=2)
 
         self.ocl_update_selected_button = ttk.Button(actions_frame, text="Update Selected Profile", command=self.update_selected_ocl_profile)
         self.ocl_update_selected_button.pack(side=tk.LEFT, padx=2)
-        
+
         # --- Status Bar ---
         self.status_bar = ttk.Label(self, text="Ready", relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -704,15 +704,15 @@ class SystemSageApp(tk.Tk):
         self.status_bar.config(text="Starting System Inventory Scan...")
         self.scan_menu.entryconfig("Run System Inventory Scan", state=tk.DISABLED)
         self.scan_menu.entryconfig("Run DevEnv Audit", state=tk.DISABLED)
-        
+
         if self.inventory_tree:
             for i in self.inventory_tree.get_children():
                 self.inventory_tree.delete(i)
-        
-        calc_disk_usage = True 
+
+        calc_disk_usage = True
         if self.cli_args and hasattr(self.cli_args, 'calculate_disk_usage'):
              calc_disk_usage = self.cli_args.calculate_disk_usage
-        
+
         thread = Thread(target=self.run_system_inventory_thread, args=(calc_disk_usage,), daemon=True)
         thread.start()
 
@@ -739,7 +739,7 @@ class SystemSageApp(tk.Tk):
                     app.get('SourceHive', 'N/A'),
                     app.get('RegistryKeyPath', 'N/A')
                 ))
-        
+
         self.system_inventory_results = software_list # Store results
         self.status_bar.config(text=f"System Inventory Scan Complete. Found {len(software_list)} items.")
         self.scan_in_progress = False
@@ -769,12 +769,12 @@ class SystemSageApp(tk.Tk):
         if self.scan_in_progress:
             messagebox.showwarning("Scan In Progress", "A scan is already running. Please wait.")
             return
-            
+
         self.scan_in_progress = True
         self.status_bar.config(text="Starting Developer Environment Audit...")
         self.scan_menu.entryconfig("Run System Inventory Scan", state=tk.DISABLED)
         self.scan_menu.entryconfig("Run DevEnv Audit", state=tk.DISABLED)
-        
+
         # Placeholder: Clear previous DevEnv results if UI elements exist
         # e.g., self.devenv_results_text.delete('1.0', tk.END)
 
@@ -783,10 +783,10 @@ class SystemSageApp(tk.Tk):
 
     def run_devenv_audit_thread(self):
         try:
-            scanner = EnvironmentScanner(progress_callback=self._devenv_progress_callback, 
+            scanner = EnvironmentScanner(progress_callback=self._devenv_progress_callback,
                                          status_callback=self._devenv_status_callback)
             components, env_vars, issues = scanner.run_scan()
-            
+
             # For now, log results. GUI display for DevEnvAudit is future.
             logging.info("--- DevEnvAudit Summary (from GUI thread) ---")
             logging.info(f"Detected Software Components: {len(components)}")
@@ -806,7 +806,7 @@ class SystemSageApp(tk.Tk):
             logging.error(f"An unexpected error occurred during the Developer Environment Audit: {e}\n{tb_str}")
             self.after(0, self.devenv_scan_error, e)
         # Removed finally block as finalize_devenv_scan is called by update_devenv_audit_display and devenv_scan_error
-            
+
     def update_devenv_audit_display(self, components, env_vars, issues):
         # Clear previous results
         for tree in [self.devenv_components_tree, self.devenv_env_vars_tree, self.devenv_issues_tree]:
@@ -834,7 +834,7 @@ class SystemSageApp(tk.Tk):
                 self.devenv_issues_tree.insert("", tk.END, values=(
                     issue.severity, issue.description, issue.category, issue.component_id, issue.related_path
                 ))
-        
+
         self.devenv_components_results = components
         self.devenv_env_vars_results = env_vars
         self.devenv_issues_results = issues
@@ -858,7 +858,7 @@ class SystemSageApp(tk.Tk):
         output_dir_default = DEFAULT_OUTPUT_DIR # Use the global default
         if self.cli_args and self.cli_args.output_dir:
             output_dir_default = self.cli_args.output_dir
-        
+
         output_dir = filedialog.askdirectory(initialdir=output_dir_default, title="Select Output Directory for Reports")
 
         if not output_dir: # User cancelled
@@ -872,7 +872,7 @@ class SystemSageApp(tk.Tk):
                     md_include_components = True
                 elif hasattr(self.cli_args, 'markdown_no_components_flag') and self.cli_args.markdown_no_components_flag:
                     md_include_components = False
-            
+
             # Call the modified global output functions
             output_to_json_combined(
                 self.system_inventory_results,
@@ -908,9 +908,9 @@ class SystemSageApp(tk.Tk):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="System Sage - Software Inventory and Path Validator.")
     parser.add_argument(
-        "--no-disk-usage", 
-        action="store_false", 
-        dest="calculate_disk_usage", 
+        "--no-disk-usage",
+        action="store_false",
+        dest="calculate_disk_usage",
         default=DEFAULT_CALCULATE_DISK_USAGE,
         help="Disable disk usage calculation for a faster scan."
     )
@@ -938,13 +938,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--md-include-components",
         action="store_true",
-        dest="markdown_include_components_flag", 
+        dest="markdown_include_components_flag",
         help="Explicitly include components/drivers in the Markdown report."
     )
     parser.add_argument(
         "--md-no-components",
         action="store_true",
-        dest="markdown_no_components_flag", 
+        dest="markdown_no_components_flag",
         help="Explicitly exclude components/drivers from the Markdown report (overrides default)."
     )
     parser.add_argument(
@@ -973,10 +973,10 @@ if __name__ == "__main__":
     # Basic logging setup for the GUI application itself (can be refined)
     # Check if logging is already configured (e.g. by another module)
     if not logging.getLogger().hasHandlers(): # Check if root logger has handlers
-        logging.basicConfig(level=logging.INFO, 
+        logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s - %(name)s [%(levelname)s] - %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S')
-    
+
     try:
         app = SystemSageApp(cli_args=args) # Pass CLI args to the app
         app.mainloop()

@@ -7,7 +7,7 @@ import os
 
 # Adjust path to import SystemSageApp from SystemSageV1.2.py
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from SystemSageV1_2 import SystemSageApp 
+from SystemSageV1_2 import SystemSageApp
 
 # It's often good practice to mock the entire module that is external to the unit under test.
 # We will use @patch decorators for specific test methods or the setUp method for `ocl_api`.
@@ -26,7 +26,7 @@ class TestOCLIntegration(unittest.TestCase):
         # Mock CLI args if the app expects it
         # Create a mock object that can have attributes assigned for argparse results
         self.mock_args = MagicMock()
-        self.mock_args.calculate_disk_usage = True 
+        self.mock_args.calculate_disk_usage = True
         self.mock_args.output_dir = "output"
         self.mock_args.markdown_include_components_flag = False # Example
         self.mock_args.markdown_no_components_flag = False    # Example
@@ -38,11 +38,11 @@ class TestOCLIntegration(unittest.TestCase):
         # Patching 'tkinter.Tk' can be broad. Let's try to be more targeted if possible,
         # or ensure all GUI interactions are through methods we can control/mock.
         # For now, assume SystemSageApp() can be instantiated, but we won't call mainloop.
-        
+
         # If SystemSageApp's __init__ itself creates many UI elements that try to interact
         # with a non-existent Tk main loop or display, we might need to mock more.
         # A common approach is to mock methods that draw to screen or enter mainloop.
-        
+
         # Let's try to create the app. If it fails, we'll need more setup mocking.
         # Mock methods that might cause issues in headless __init__
         with patch.object(SystemSageApp, 'create_widgets_system_inventory', MagicMock()), \
@@ -55,21 +55,21 @@ class TestOCLIntegration(unittest.TestCase):
             # We mock them here for the setUp so __init__ can complete without side effects.
             # Test methods will then test the *actual* create_widgets_ocl or specific UI interactions
             # by patching more selectively or by inspecting widget states.
-            
+
             # Also, SystemSageApp's __init__ calls self.title(), self.geometry(), self.config()
             # which are tk.Tk methods. If tk.Tk itself isn't replaced by a mock, these will
             # require a display.
             # A simpler way for setup might be to not call super().__init__() or mock tk.Tk.
             # Let's try with minimal __init__ mocking for now.
-            
+
             # If `SystemSageApp` is `tk.Tk` itself, its `__init__` will run `tk.Tk.__init__`.
             # This is often the tricky part for headless testing.
             # A common pattern is to have a main App class that *has a* root window,
             # rather than *is a* root window.
-            
+
             # Given the current structure, we'll assume SystemSageApp can be instantiated,
             # and we will mock its mainloop.
-            
+
             # Mocking specific methods of SystemSageApp that are called in __init__
             # and create widgets.
             # This is a bit fragile if __init__ changes.

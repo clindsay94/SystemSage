@@ -17,11 +17,11 @@ class TestDevEnvAuditConfigLoading(unittest.TestCase):
         sample_config_content = '{"scan_options": {"custom_paths": ["/test"]}}'
         # Configure the mock to simulate reading JSON content
         mock_file_open.return_value.read.return_value = sample_config_content
-        
+
         # Patch json.load within the config_manager's scope
         with patch('devenvaudit_src.config_manager.json.load', return_value=json.loads(sample_config_content)) as mock_json_load:
             config = devenv_config_manager.load_config()
-        
+
         self.assertEqual(config["scan_options"]["custom_paths"], ["/test"])
         mock_file_open.assert_called_with(devenv_config_manager.CONFIG_FILE_PATH, 'r', encoding='utf-8')
         mock_json_load.assert_called_once()
@@ -35,18 +35,18 @@ class TestDevEnvAuditConfigLoading(unittest.TestCase):
     def test_load_devenv_config_not_found_creates_default(self, mock_makedirs, mock_json_dump, mock_file_open_write, mock_exists):
         # This test assumes load_config tries to save a default if not found
         # The _ensure_config_dir_exists is called first, then path.exists, then open for write
-        
+
         # Simulate os.path.exists for _ensure_config_dir_exists (first call)
         # and then for load_config (second call)
         mock_exists.side_effect = [True, False] # First call (dir exists), second call (file not found)
 
         config = devenv_config_manager.load_config()
         self.assertEqual(config, devenv_config_manager.DEFAULT_CONFIG)
-        
+
         # Check if it attempted to save the default config
         # The open mock needs to handle the write call context manager
         mock_file_open_write.assert_any_call(devenvaudit_src.config_manager.CONFIG_FILE_PATH, 'w', encoding='utf-8')
-        
+
         # json.dump is called with the file object from open
         # We need to ensure mock_file_open_write() is used correctly for the context manager
         # This assertion might be tricky depending on how mock_open handles context managers.
@@ -63,14 +63,14 @@ class TestDevEnvAuditScanLogicAssetLoading(unittest.TestCase):
     def test_tools_db_loading_success(self, mock_file):
         # Set up the mock for the open call that loads TOOLS_DB_PATH
         tools_db_content = '[{"id": "test_tool", "name": "Test Tool"}]'
-        
+
         # We need to ensure this mock is active when scan_logic is reloaded/imported.
         # The patch should apply to 'devenvaudit_src.scan_logic.open'
-        
+
         # Mock json.load within scan_logic's scope
         with patch("devenvaudit_src.scan_logic.json.load") as mock_json_load:
             mock_json_load.return_value = json.loads(tools_db_content) # Simulate successful JSON parsing
-            
+
             # Configure the specific open call for TOOLS_DB_PATH
             # This is tricky because the path is constructed inside scan_logic.
             # A direct patch on scan_logic.open is better.
@@ -82,11 +82,11 @@ class TestDevEnvAuditScanLogicAssetLoading(unittest.TestCase):
             # Reload scan_logic to trigger module-level code execution with patches
             import importlib
             importlib.reload(devenv_scan_logic)
-        
+
         # Verify TOOLS_DB content
         self.assertIsNotNone(devenv_scan_logic.TOOLS_DB, "TOOLS_DB should not be None")
         self.assertEqual(devenv_scan_logic.TOOLS_DB, [{"id": "test_tool", "name": "Test Tool"}])
-        
+
         # Verify open was called with the correct path (constructed in scan_logic)
         # This requires knowing the exact path string.
         expected_tools_db_path = os.path.join(os.path.dirname(devenv_scan_logic.__file__), "tools_database.json")
@@ -113,7 +113,7 @@ class TestEnvironmentScannerHelpers(unittest.TestCase):
         mock_process = mock_popen.return_value
         # Ensure communicate returns bytes if text=False (default), or str if text=True
         # The code sets text=True, so stdout/stderr should be strings.
-        mock_process.communicate.return_value = ("Python 3.9.1", "") 
+        mock_process.communicate.return_value = ("Python 3.9.1", "")
         mock_process.returncode = 0
         # Patch os.path.exists for the executable path check
         with patch('os.path.exists', return_value=True):
@@ -126,7 +126,7 @@ class TestEnvironmentScannerHelpers(unittest.TestCase):
         mock_process = mock_popen.return_value
         mock_process.communicate.side_effect = subprocess.TimeoutExpired(cmd="test", timeout=1)
         # Mock kill and subsequent communicate if needed by the logic
-        mock_process.kill.return_value = None 
+        mock_process.kill.return_value = None
         # The second communicate call after kill
         mock_process.communicate.return_value = ("", "TimeoutExpired after kill")
 
@@ -141,20 +141,20 @@ class TestEnvironmentScannerHelpers(unittest.TestCase):
     @patch("os.access") # os.access is still used
     def test_find_executable_in_path(self, mock_os_access, mock_path_resolve, mock_path_is_file):
         # Scenario: exe exists and is executable
-        
+
         # Configure mocks for Path objects
         # This requires knowing how Path objects are constructed and used.
         # If Path('/test/bin') / 'myexe' is called:
-        
+
         def is_file_side_effect(path_obj): # The path_obj is the Path instance
             return str(path_obj) == "/test/bin/myexe"
 
         mock_path_is_file.side_effect = is_file_side_effect
-        
+
         # Make resolve return a new Path object with the resolved string, or just the string
         # The code uses str(exe_path.resolve()), so a string is fine.
-        mock_path_resolve.side_effect = lambda: "/test/bin/myexe" 
-        
+        mock_path_resolve.side_effect = lambda: "/test/bin/myexe"
+
         mock_os_access.return_value = True # os.access(exe_path, os.X_OK)
 
         # Clear cached found_executables for consistent test runs

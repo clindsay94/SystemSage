@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from SystemSageV1_2 import output_to_json_combined, output_to_markdown_combined
 # Mock data classes for testing outputs
 # If these are not easily importable or are complex, create simple mock objects/dicts for tests
-from devenvaudit_src.scan_logic import DetectedComponent, EnvironmentVariableInfo, ScanIssue 
+from devenvaudit_src.scan_logic import DetectedComponent, EnvironmentVariableInfo, ScanIssue
 
 class TestJsonOutput(unittest.TestCase):
     sample_inventory = [{"DisplayName": "App1", "DisplayVersion": "1.0"}]
@@ -20,7 +20,7 @@ class TestJsonOutput(unittest.TestCase):
     @patch("logging.info") # Mock logging to suppress output during test
     def run_json_test(self, data, mock_log_info, mock_open_file, mock_makedirs):
         output_dir = "test_output"
-        
+
         # Handle the case where all data is None or empty
         if not data.get("inventory") and not data.get("dev_comp") and \
            not data.get("dev_env") and not data.get("dev_issues"):
@@ -32,26 +32,26 @@ class TestJsonOutput(unittest.TestCase):
             return {} # Return empty dict as per expected behavior for no data
 
         output_to_json_combined(
-            data.get("inventory"), 
-            data.get("dev_comp"), 
-            data.get("dev_env"), 
-            data.get("dev_issues"), 
+            data.get("inventory"),
+            data.get("dev_comp"),
+            data.get("dev_env"),
+            data.get("dev_issues"),
             output_dir, "test_report.json"
         )
         mock_makedirs.assert_called_with(output_dir, exist_ok=True)
-        
+
         # Ensure file was actually called for writing if data was present
         self.assertTrue(mock_open_file.called)
-        
+
         # Get the written content from mock_open
         written_content = ""
         # Iterate through all calls to write() because json.dump might call it multiple times
         for call_arg in mock_open_file().write.call_args_list:
             written_content += call_arg[0][0]
-            
+
         if not written_content: # Should not happen if file was opened for writing data
-            return {} 
-            
+            return {}
+
         return json.loads(written_content)
 
     def test_json_full_data(self):
@@ -113,7 +113,7 @@ class TestMarkdownOutput(unittest.TestCase):
         return written_content
 
     def test_md_headers_full_data(self):
-        data = {"inventory": self.sample_inventory, 
+        data = {"inventory": self.sample_inventory,
                 "dev_comp": self.sample_dev_comp,
                 "dev_env": self.sample_dev_env,
                 "dev_issues": self.sample_dev_issues
