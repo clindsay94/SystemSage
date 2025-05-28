@@ -1,9 +1,6 @@
-output/system_sage_inventory.json
-system_sage_inventory.json
-system_sage_inventory.md
-output/system_sage_inventory.md
-output/system_sage_inventory.json
+# Ignore system inventory files
 output/system_sage_inventory.json
 output/system_sage_inventory.md
 /output
-/output
+.json
+.md
