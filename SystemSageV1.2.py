@@ -17,7 +17,7 @@ import datetime
 import argparse 
 import logging # Added for DevEnvAudit integration
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog # Added filedialog
 from threading import Thread
 import traceback # For logging exceptions from threads
 
@@ -290,70 +290,144 @@ def get_installed_software(calculate_disk_usage_flag):
             
     return sorted(software_list, key=lambda x: str(x.get('DisplayName','')).lower())
 
-def output_to_json(software_list, output_dir, filename="system_sage_inventory.json"): # V1.2: Added output_dir
-    """Saves the software list to a JSON file in the specified output directory."""
+def output_to_json_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.json"):
+    combined_data = {}
+    if system_inventory_data:
+        combined_data["systemInventory"] = system_inventory_data
+    
+    if devenv_components_data or devenv_env_vars_data or devenv_issues_data:
+        devenv_audit_data = {}
+        if devenv_components_data:
+            devenv_audit_data["detectedComponents"] = [comp.to_dict() for comp in devenv_components_data]
+        if devenv_env_vars_data:
+            devenv_audit_data["environmentVariables"] = [ev.to_dict() for ev in devenv_env_vars_data]
+        if devenv_issues_data:
+            devenv_audit_data["identifiedIssues"] = [issue.to_dict() for issue in devenv_issues_data]
+        if devenv_audit_data: # only add if there's something
+             combined_data["devEnvAudit"] = devenv_audit_data
+
+    if not combined_data:
+        logging.info("No data to save to JSON report.")
+        return
+
     try:
-        os.makedirs(output_dir, exist_ok=True) # V1.2: Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
         full_path = os.path.join(output_dir, filename)
         with open(full_path, 'w', encoding='utf-8') as f:
-            json.dump(software_list, f, ensure_ascii=False, indent=4)
-        print(f"\nInventory successfully saved to {full_path}")
+            json.dump(combined_data, f, ensure_ascii=False, indent=4)
+        logging.info(f"Combined JSON report successfully saved to {full_path}") # Changed print to logging
     except Exception as e:
-        print(f"Error saving JSON file to {output_dir}: {e}")
+        logging.error(f"Error saving combined JSON file to {output_dir}: {e}") # Changed print to logging
+        raise # Re-raise for the GUI to catch and show via messagebox
 
-def output_to_markdown(software_list, output_dir, filename="system_sage_inventory.md", include_components=False): # V1.2: Added output_dir
-    """Saves the software list to a Markdown file in the specified output directory."""
+def output_to_markdown_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.md", include_system_sage_components_flag=True):
     try:
-        os.makedirs(output_dir, exist_ok=True) # V1.2: Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
         full_path = os.path.join(output_dir, filename)
         with open(full_path, 'w', encoding='utf-8') as f:
-            f.write(f"# System Sage Software Inventory - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write(f"# System Sage Combined Report - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
             
-            header = "| Application Name | Version | Publisher | Install Path | Size | Status | Remarks | Source Hive | Registry Key Path |\n"
-            separator = "|---|---|---|---|---|---|---|---|---|\n"
+            # --- System Inventory Section ---
+            f.write("## System Software Inventory\n\n")
+            if system_inventory_data:
+                header = "| Application Name | Version | Publisher | Install Path | Size | Status | Remarks | Source Hive | Registry Key Path |\n"
+                separator = "|---|---|---|---|---|---|---|---|---|\n"
 
-            f.write("## Applications\n")
-            f.write(header)
-            f.write(separator)
-            app_count = 0
-            for app in software_list:
-                if app.get('Category') == "Application":
-                    app_count +=1
-                    name = str(app.get('DisplayName', 'N/A')).replace('|', '\\|') 
-                    version = str(app.get('DisplayVersion', 'N/A')).replace('|', '\\|')
-                    publisher = str(app.get('Publisher', 'N/A')).replace('|', '\\|')
-                    location = str(app.get('InstallLocation', 'N/A')).replace('|', '\\|') 
-                    size = str(app.get('InstallLocationSize', 'N/A')).replace('|', '\\|') 
-                    status = str(app.get('PathStatus', 'N/A')).replace('|', '\\|')
-                    remarks = str(app.get('Remarks', '')).replace('|', '\\|') 
-                    hive = str(app.get('SourceHive', 'N/A')).replace('|', '\\|')
-                    reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|') 
-                    f.write(f"| {name} | {version} | {publisher} | {location} | {size} | {status} | {remarks} | {hive} | {reg_key} |\n")
-            if app_count == 0:
-                f.write("| No primary applications found. | | | | | | | | |\n")
-
-            if include_components:
-                f.write("\n## Components & Drivers\n")
-                f.write(header.replace("Application Name", "Component Name")) 
+                f.write("### Applications\n")
+                f.write(header)
                 f.write(separator)
-                comp_count = 0
-                for app in software_list:
-                    if app.get('Category') == "Component/Driver":
-                        comp_count +=1
-                        name = str(app.get('DisplayName', 'N/A')).replace('|', '\\|')
+                app_count = 0
+                for app in system_inventory_data:
+                    if app.get('Category') == "Application":
+                        app_count +=1
+                        name = str(app.get('DisplayName', 'N/A')).replace('|', '\\|') 
                         version = str(app.get('DisplayVersion', 'N/A')).replace('|', '\\|')
                         publisher = str(app.get('Publisher', 'N/A')).replace('|', '\\|')
-                        location = str(app.get('InstallLocation', 'N/A')).replace('|', '\\|')
+                        location = str(app.get('InstallLocation', 'N/A')).replace('|', '\\|') 
                         size = str(app.get('InstallLocationSize', 'N/A')).replace('|', '\\|') 
                         status = str(app.get('PathStatus', 'N/A')).replace('|', '\\|')
                         remarks = str(app.get('Remarks', '')).replace('|', '\\|') 
                         hive = str(app.get('SourceHive', 'N/A')).replace('|', '\\|')
-                        reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|')
+                        reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|') 
                         f.write(f"| {name} | {version} | {publisher} | {location} | {size} | {status} | {remarks} | {hive} | {reg_key} |\n")
-                if comp_count == 0:
-                     f.write("| No components/drivers found or filtering disabled. | | | | | | | | |\n")
+                if app_count == 0:
+                    f.write("| No primary applications found. | | | | | | | | |\n")
+
+                if include_system_sage_components_flag: # This flag is for System Inventory components
+                    f.write("\n### Components & Drivers (System Inventory)\n")
+                    f.write(header.replace("Application Name", "Component Name")) 
+                    f.write(separator)
+                    comp_count = 0
+                    for app in system_inventory_data:
+                        if app.get('Category') == "Component/Driver":
+                            comp_count +=1
+                            name = str(app.get('DisplayName', 'N/A')).replace('|', '\\|')
+                            version = str(app.get('DisplayVersion', 'N/A')).replace('|', '\\|')
+                            publisher = str(app.get('Publisher', 'N/A')).replace('|', '\\|')
+                            location = str(app.get('InstallLocation', 'N/A')).replace('|', '\\|')
+                            size = str(app.get('InstallLocationSize', 'N/A')).replace('|', '\\|') 
+                            status = str(app.get('PathStatus', 'N/A')).replace('|', '\\|')
+                            remarks = str(app.get('Remarks', '')).replace('|', '\\|') 
+                            hive = str(app.get('SourceHive', 'N/A')).replace('|', '\\|')
+                            reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|')
+                            f.write(f"| {name} | {version} | {publisher} | {location} | {size} | {status} | {remarks} | {hive} | {reg_key} |\n")
+                    if comp_count == 0:
+                         f.write("| No components/drivers found or filtering disabled. | | | | | | | | |\n")
+            else:
+                f.write("No System Inventory data available.\n")
+
+            # --- DevEnvAudit Section ---
+            f.write("\n## Developer Environment Audit Results\n")
+            if devenv_components_data or devenv_env_vars_data or devenv_issues_data:
+                if devenv_components_data:
+                    f.write("\n### Detected Development Components\n")
+                    comp_header = "| Name | Version | Category | Path | Executable Path | ID |\n"
+                    comp_separator = "|---|---|---|---|---|---|\n"
+                    f.write(comp_header)
+                    f.write(comp_separator)
+                    for comp in devenv_components_data: # Using .to_dict() is for JSON, here access attributes directly
+                        name = str(comp.name).replace('|', '\\|')
+                        version = str(comp.version).replace('|', '\\|')
+                        category = str(comp.category).replace('|', '\\|')
+                        path = str(comp.path if comp.path else "N/A").replace('|', '\\|')
+                        exe_path = str(comp.executable_path if comp.executable_path else "N/A").replace('|', '\\|')
+                        comp_id = str(comp.id).replace('|', '\\|')
+                        f.write(f"| {name} | {version} | {category} | {path} | {exe_path} | {comp_id} |\n")
+                    if not devenv_components_data: f.write("| No development components detected. | | | | | |\n")
+                
+                if devenv_env_vars_data:
+                    f.write("\n### Key Environment Variables\n")
+                    env_header = "| Name | Value | Scope |\n"
+                    env_separator = "|---|---|---|\n"
+                    f.write(env_header)
+                    f.write(env_separator)
+                    for ev in devenv_env_vars_data: # Using .to_dict() is for JSON
+                        name = str(ev.name).replace('|', '\\|')
+                        value = str(ev.value).replace('|', '\\|') 
+                        scope = str(ev.scope).replace('|', '\\|')
+                        f.write(f"| {name} | {value} | {scope} |\n")
+                    if not devenv_env_vars_data: f.write("| No environment variables data. | | |\n")
+
+                if devenv_issues_data:
+                    f.write("\n### Identified Issues (DevEnvAudit)\n")
+                    issue_header = "| Severity | Description | Category | Component ID | Related Path |\n"
+                    issue_separator = "|---|---|---|---|---|\n"
+                    f.write(issue_header)
+                    f.write(issue_separator)
+                    for issue in devenv_issues_data: # Using .to_dict() is for JSON
+                        severity = str(issue.severity).replace('|', '\\|')
+                        desc = str(issue.description).replace('|', '\\|')
+                        cat = str(issue.category).replace('|', '\\|')
+                        comp_id_val = issue.component_id if issue.component_id is not None else "N/A"
+                        rel_path_val = issue.related_path if issue.related_path is not None else "N/A"
+                        comp_id = str(comp_id_val).replace('|', '\\|')
+                        rel_path = str(rel_path_val).replace('|', '\\|')
+                        f.write(f"| {severity} | {desc} | {cat} | {comp_id} | {rel_path} |\n")
+                    if not devenv_issues_data: f.write("| No issues identified by DevEnvAudit. | | | | |\n")
+            else:
+                f.write("No Developer Environment Audit data available.\n")
             
-            f.write("\n## Future Interactive Features (Planned)\n")
+            f.write("\n## Future Interactive Features (Planned)\n") # This section can remain as is or be updated
             f.write("The following features are planned for future versions of System Sage to allow for interactive management:\n\n")
             f.write("- **Orphaned Entry Review:** For items marked with 'Potential Orphan?' or 'Registry entry only?', System Sage will offer an option to:\n")
             f.write("  - Attempt to locate related files/folders on disk (potentially using an external search tool if available).\n")
@@ -366,9 +440,10 @@ def output_to_markdown(software_list, output_dir, filename="system_sage_inventor
             f.write("- **Batch Actions:** For multiple selected items (e.g., multiple confirmed orphans), allow for batch processing of actions like registry key deletion (with appropriate safeguards and confirmations).\n\n")
             f.write("*Disclaimer: Modifying the Windows Registry carries risks. Future interactive features will be designed with safety and user confirmation as top priorities. Always ensure you have backups before making significant system changes.*\n")
 
-        print(f"Inventory successfully saved to {full_path}")
+        logging.info(f"Combined Markdown report successfully saved to {full_path}") # Changed print to logging
     except Exception as e:
-        print(f"Error saving Markdown file to {output_dir}: {e}")
+        logging.error(f"Error saving combined Markdown file to {output_dir}: {e}") # Changed print to logging
+        raise # Re-raise for the GUI to catch and show via messagebox
 
 
 def run_devenv_audit():
@@ -433,6 +508,11 @@ class SystemSageApp(tk.Tk):
         self.cli_args = cli_args # Store them
         self.inventory_tree = None
         self.scan_in_progress = False
+        # Result storage attributes
+        self.system_inventory_results = []
+        self.devenv_components_results = []
+        self.devenv_env_vars_results = []
+        self.devenv_issues_results = []
         # DevEnvAudit Treeviews
         self.devenv_components_tree = None
         self.devenv_env_vars_tree = None
@@ -447,6 +527,8 @@ class SystemSageApp(tk.Tk):
 
         # File Menu
         file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        file_menu.add_command(label="Save Combined Report (JSON & MD)", command=self.save_combined_report)
+        file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.quit_app)
         self.menu_bar.add_cascade(label="File", menu=file_menu)
         
@@ -587,6 +669,7 @@ class SystemSageApp(tk.Tk):
                     app.get('RegistryKeyPath', 'N/A')
                 ))
         
+        self.system_inventory_results = software_list # Store results
         self.status_bar.config(text=f"System Inventory Scan Complete. Found {len(software_list)} items.")
         self.scan_in_progress = False
         self.scan_menu.entryconfig("Run System Inventory Scan", state=tk.NORMAL)
@@ -681,6 +764,9 @@ class SystemSageApp(tk.Tk):
                     issue.severity, issue.description, issue.category, issue.component_id, issue.related_path
                 ))
         
+        self.devenv_components_results = components
+        self.devenv_env_vars_results = env_vars
+        self.devenv_issues_results = issues
         self.finalize_devenv_scan(message=f"DevEnv Audit Complete. Found {len(components)} components, {len(env_vars)} env vars, {len(issues)} issues.")
 
     def devenv_scan_error(self, error):
@@ -693,6 +779,49 @@ class SystemSageApp(tk.Tk):
         self.scan_menu.entryconfig("Run System Inventory Scan", state=tk.NORMAL)
         self.scan_menu.entryconfig("Run DevEnv Audit", state=tk.NORMAL)
 
+    def save_combined_report(self):
+        if not self.system_inventory_results and not self.devenv_components_results:
+            messagebox.showwarning("No Data", "No scan data available to save. Please run a scan first.")
+            return
+
+        output_dir_default = DEFAULT_OUTPUT_DIR # Use the global default
+        if self.cli_args and self.cli_args.output_dir:
+            output_dir_default = self.cli_args.output_dir
+        
+        output_dir = filedialog.askdirectory(initialdir=output_dir_default, title="Select Output Directory for Reports")
+
+        if not output_dir: # User cancelled
+            return
+
+        try:
+            # Determine if System Sage components should be included in Markdown based on CLI args or a default
+            md_include_components = DEFAULT_MARKDOWN_INCLUDE_COMPONENTS # Default from global
+            if self.cli_args: # Check if CLI args were even parsed
+                if hasattr(self.cli_args, 'markdown_include_components_flag') and self.cli_args.markdown_include_components_flag:
+                    md_include_components = True
+                elif hasattr(self.cli_args, 'markdown_no_components_flag') and self.cli_args.markdown_no_components_flag:
+                    md_include_components = False
+            
+            # Call the modified global output functions
+            output_to_json_combined(
+                self.system_inventory_results,
+                self.devenv_components_results,
+                self.devenv_env_vars_results,
+                self.devenv_issues_results,
+                output_dir
+            )
+            output_to_markdown_combined(
+                self.system_inventory_results,
+                self.devenv_components_results,
+                self.devenv_env_vars_results,
+                self.devenv_issues_results,
+                output_dir,
+                include_system_sage_components_flag=md_include_components
+            )
+            messagebox.showinfo("Reports Saved", f"Combined JSON and Markdown reports saved to: {output_dir}")
+        except Exception as e:
+            logging.error(f"Error saving reports: {e}\n{traceback.format_exc()}")
+            messagebox.showerror("Save Error", f"Failed to save reports: {e}")
 
     def quit_app(self):
         if self.scan_in_progress:
