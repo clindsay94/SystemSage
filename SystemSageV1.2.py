@@ -24,6 +24,7 @@ import traceback # For logging exceptions from threads
 
 # --- DevEnvAudit Imports ---
 from devenvaudit_src.scan_logic import EnvironmentScanner
+
 # --- OCL Module Imports ---
 from ocl_module_src import olb_api as ocl_api
 from devenvaudit_src.config_manager import load_config as load_devenv_config
@@ -237,13 +238,17 @@ def get_installed_software(calculate_disk_usage_flag):
                                 else:
                                     app_details['PathStatus'] = "No Valid Path in Registry"
                                     if app_details['Category'] == "Application":
+
                                         app_details['Remarks'] += " Registry entry only (Potential Orphan?). Consider searching common install locations (e.g., Program Files) for remnants if software is unexpected.;"
+
                             except FileNotFoundError:
                                 app_details['InstallLocation'] = "N/A"
                                 app_details['PathStatus'] = "No Path in Registry"
                                 if app_details['Category'] == "Application":
+
                                      app_details['Remarks'] += " Registry entry only (Potential Orphan?). Consider searching common install locations (e.g., Program Files) for remnants if software is unexpected.;"
                             except OSError as e:
+
                                 app_details['InstallLocation'] = f"Path Read Error: {e.strerror}"
                                 app_details['PathStatus'] = "Error"
                                 app_details['Remarks'] += f" Error accessing install path: {e.strerror};"
@@ -298,6 +303,8 @@ def output_to_json_combined(system_inventory_data, devenv_components_data, deven
     if system_inventory_data:
         combined_data["systemInventory"] = system_inventory_data
 
+
+
     if devenv_components_data or devenv_env_vars_data or devenv_issues_data:
         devenv_audit_data = {}
         if devenv_components_data:
@@ -330,6 +337,8 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
         with open(full_path, 'w', encoding='utf-8') as f:
             f.write(f"# System Sage Combined Report - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
 
+
+
             # --- System Inventory Section ---
             f.write("## System Software Inventory\n\n")
             if system_inventory_data:
@@ -343,6 +352,7 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                 for app in system_inventory_data:
                     if app.get('Category') == "Application":
                         app_count +=1
+
                         name = str(app.get('DisplayName', 'N/A')).replace('|', '\\|')
                         version = str(app.get('DisplayVersion', 'N/A')).replace('|', '\\|')
                         publisher = str(app.get('Publisher', 'N/A')).replace('|', '\\|')
@@ -351,14 +361,16 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                         status = str(app.get('PathStatus', 'N/A')).replace('|', '\\|')
                         remarks = str(app.get('Remarks', '')).replace('|', '\\|')
                         hive = str(app.get('SourceHive', 'N/A')).replace('|', '\\|')
-                        reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|')
+                        reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|') 
                         f.write(f"| {name} | {version} | {publisher} | {location} | {size} | {status} | {remarks} | {hive} | {reg_key} |\n")
                 if app_count == 0:
                     f.write("| No primary applications found. | | | | | | | | |\n")
 
                 if include_system_sage_components_flag: # This flag is for System Inventory components
                     f.write("\n### Components & Drivers (System Inventory)\n")
+
                     f.write(header.replace("Application Name", "Component Name"))
+
                     f.write(separator)
                     comp_count = 0
                     for app in system_inventory_data:
@@ -398,6 +410,8 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                         f.write(f"| {name} | {version} | {category} | {path} | {exe_path} | {comp_id} |\n")
                     if not devenv_components_data: f.write("| No development components detected. | | | | | |\n")
 
+
+
                 if devenv_env_vars_data:
                     f.write("\n### Key Environment Variables\n")
                     env_header = "| Name | Value | Scope |\n"
@@ -430,6 +444,8 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
             else:
                 f.write("No Developer Environment Audit data available.\n")
 
+
+
             f.write("\n## Future Interactive Features (Planned)\n") # This section can remain as is or be updated
             f.write("The following features are planned for future versions of System Sage to allow for interactive management:\n\n")
             f.write("- **Orphaned Entry Review:** For items marked with 'Potential Orphan?' or 'Registry entry only?', System Sage will offer an option to:\n")
@@ -444,6 +460,7 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
             f.write("*Disclaimer: Modifying the Windows Registry carries risks. Future interactive features will be designed with safety and user confirmation as top priorities. Always ensure you have backups before making significant system changes.*\n")
 
         logging.info(f"Combined Markdown report successfully saved to {full_path}") # Changed print to logging
+
     except Exception as e:
         logging.error(f"Error saving combined Markdown file to {output_dir}: {e}") # Changed print to logging
         raise # Re-raise for the GUI to catch and show via messagebox
@@ -499,6 +516,7 @@ def run_devenv_audit():
         print(f"ERROR: DevEnvAudit required file not found: {e}")
         print("This might be 'devenvaudit_config.json' or 'software categorization database.json' or 'tools_database.json' in 'devenvaudit_src'.")
     except Exception as e:
+
         print(f"An unexpected error occurred during the Developer Environment Audit: {e}")
         logging.exception("DevEnvAudit execution failed") # Log full traceback
 
@@ -520,12 +538,14 @@ class SystemSageApp(tk.Tk):
         self.devenv_components_tree = None
         self.devenv_env_vars_tree = None
         self.devenv_issues_tree = None
+
         # OCL UI Elements
         self.ocl_profiles_tree = None
         self.ocl_profile_details_text = None
         self.ocl_refresh_button = None
         self.ocl_save_new_button = None
         self.ocl_update_selected_button = None
+
 
         self.title("System Sage")
         self.geometry("1200x800") # Adjusted size for more content
@@ -541,6 +561,7 @@ class SystemSageApp(tk.Tk):
         file_menu.add_command(label="Exit", command=self.quit_app)
         self.menu_bar.add_cascade(label="File", menu=file_menu)
 
+
         # Scan Menu
         self.scan_menu = tk.Menu(self.menu_bar, tearoff=0) # Store as self.scan_menu
         self.scan_menu.add_command(label="Run System Inventory Scan", command=self.start_system_inventory_scan)
@@ -553,10 +574,11 @@ class SystemSageApp(tk.Tk):
 
         # Tab 1: System Inventory
         inventory_tab = ttk.Frame(main_notebook)
-        main_notebook.add(inventory_tab, text="System Inventory")
+
 
         columns = ("Name", "Version", "Publisher", "Path", "Size", "Status", "Remarks", "SourceHive", "RegKey")
         self.inventory_tree = ttk.Treeview(inventory_tab, columns=columns, show="headings")
+
 
         for col in columns:
             self.inventory_tree.heading(col, text=col)
@@ -629,6 +651,7 @@ class SystemSageApp(tk.Tk):
         issue_hsb.pack(side=tk.BOTTOM, fill=tk.X)
         self.devenv_issues_tree.pack(expand=True, fill=tk.BOTH)
 
+
         # Tab 3: Overclocker's Logbook (OCL)
         ocl_tab = ttk.Frame(main_notebook)
         main_notebook.add(ocl_tab, text="Overclocker's Logbook")
@@ -691,6 +714,7 @@ class SystemSageApp(tk.Tk):
         self.ocl_update_selected_button = ttk.Button(actions_frame, text="Update Selected Profile", command=self.update_selected_ocl_profile)
         self.ocl_update_selected_button.pack(side=tk.LEFT, padx=2)
 
+
         # --- Status Bar ---
         self.status_bar = ttk.Label(self, text="Ready", relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -705,6 +729,7 @@ class SystemSageApp(tk.Tk):
         self.scan_menu.entryconfig("Run System Inventory Scan", state=tk.DISABLED)
         self.scan_menu.entryconfig("Run DevEnv Audit", state=tk.DISABLED)
 
+
         if self.inventory_tree:
             for i in self.inventory_tree.get_children():
                 self.inventory_tree.delete(i)
@@ -712,6 +737,7 @@ class SystemSageApp(tk.Tk):
         calc_disk_usage = True
         if self.cli_args and hasattr(self.cli_args, 'calculate_disk_usage'):
              calc_disk_usage = self.cli_args.calculate_disk_usage
+
 
         thread = Thread(target=self.run_system_inventory_thread, args=(calc_disk_usage,), daemon=True)
         thread.start()
@@ -739,6 +765,8 @@ class SystemSageApp(tk.Tk):
                     app.get('SourceHive', 'N/A'),
                     app.get('RegistryKeyPath', 'N/A')
                 ))
+
+
 
         self.system_inventory_results = software_list # Store results
         self.status_bar.config(text=f"System Inventory Scan Complete. Found {len(software_list)} items.")
@@ -770,10 +798,13 @@ class SystemSageApp(tk.Tk):
             messagebox.showwarning("Scan In Progress", "A scan is already running. Please wait.")
             return
 
+
+
         self.scan_in_progress = True
         self.status_bar.config(text="Starting Developer Environment Audit...")
         self.scan_menu.entryconfig("Run System Inventory Scan", state=tk.DISABLED)
         self.scan_menu.entryconfig("Run DevEnv Audit", state=tk.DISABLED)
+
 
         # Placeholder: Clear previous DevEnv results if UI elements exist
         # e.g., self.devenv_results_text.delete('1.0', tk.END)
@@ -783,9 +814,11 @@ class SystemSageApp(tk.Tk):
 
     def run_devenv_audit_thread(self):
         try:
+
             scanner = EnvironmentScanner(progress_callback=self._devenv_progress_callback,
                                          status_callback=self._devenv_status_callback)
             components, env_vars, issues = scanner.run_scan()
+
 
             # For now, log results. GUI display for DevEnvAudit is future.
             logging.info("--- DevEnvAudit Summary (from GUI thread) ---")
@@ -806,6 +839,7 @@ class SystemSageApp(tk.Tk):
             logging.error(f"An unexpected error occurred during the Developer Environment Audit: {e}\n{tb_str}")
             self.after(0, self.devenv_scan_error, e)
         # Removed finally block as finalize_devenv_scan is called by update_devenv_audit_display and devenv_scan_error
+
 
     def update_devenv_audit_display(self, components, env_vars, issues):
         # Clear previous results
@@ -835,6 +869,8 @@ class SystemSageApp(tk.Tk):
                     issue.severity, issue.description, issue.category, issue.component_id, issue.related_path
                 ))
 
+
+
         self.devenv_components_results = components
         self.devenv_env_vars_results = env_vars
         self.devenv_issues_results = issues
@@ -859,6 +895,8 @@ class SystemSageApp(tk.Tk):
         if self.cli_args and self.cli_args.output_dir:
             output_dir_default = self.cli_args.output_dir
 
+
+
         output_dir = filedialog.askdirectory(initialdir=output_dir_default, title="Select Output Directory for Reports")
 
         if not output_dir: # User cancelled
@@ -872,6 +910,8 @@ class SystemSageApp(tk.Tk):
                     md_include_components = True
                 elif hasattr(self.cli_args, 'markdown_no_components_flag') and self.cli_args.markdown_no_components_flag:
                     md_include_components = False
+
+
 
             # Call the modified global output functions
             output_to_json_combined(
@@ -973,9 +1013,11 @@ if __name__ == "__main__":
     # Basic logging setup for the GUI application itself (can be refined)
     # Check if logging is already configured (e.g. by another module)
     if not logging.getLogger().hasHandlers(): # Check if root logger has handlers
+
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s - %(name)s [%(levelname)s] - %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S')
+
 
     try:
         app = SystemSageApp(cli_args=args) # Pass CLI args to the app

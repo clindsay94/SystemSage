@@ -7,7 +7,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from SystemSageV1_2 import output_to_json_combined, output_to_markdown_combined
 # Mock data classes for testing outputs
 # If these are not easily importable or are complex, create simple mock objects/dicts for tests
+
 from devenvaudit_src.scan_logic import DetectedComponent, EnvironmentVariableInfo, ScanIssue
+
 
 class TestJsonOutput(unittest.TestCase):
     sample_inventory = [{"DisplayName": "App1", "DisplayVersion": "1.0"}]
@@ -32,6 +34,7 @@ class TestJsonOutput(unittest.TestCase):
             return {} # Return empty dict as per expected behavior for no data
 
         output_to_json_combined(
+
             data.get("inventory"),
             data.get("dev_comp"),
             data.get("dev_env"),
@@ -49,8 +52,10 @@ class TestJsonOutput(unittest.TestCase):
         for call_arg in mock_open_file().write.call_args_list:
             written_content += call_arg[0][0]
 
+
         if not written_content: # Should not happen if file was opened for writing data
             return {}
+
 
         return json.loads(written_content)
 
@@ -113,6 +118,7 @@ class TestMarkdownOutput(unittest.TestCase):
         return written_content
 
     def test_md_headers_full_data(self):
+
         data = {"inventory": self.sample_inventory,
                 "dev_comp": self.sample_dev_comp,
                 "dev_env": self.sample_dev_env,

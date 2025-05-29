@@ -45,6 +45,8 @@ class TestLoadJsonConfig(unittest.TestCase):
         # Configure the mock to simulate reading JSON content
         mock_file_open.return_value.read.return_value = '[{"key": "value"}]'
 
+
+
         # Since json.load is called on the file object, we need to ensure the file object itself
         # (mock_file_open.return_value) can be iterated by json.load or json.load is patched.
         # Patching json.load directly is often cleaner.

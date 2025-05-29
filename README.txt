@@ -1,3 +1,4 @@
+
 # System Sage - V2.0 (GUI Edition)
 
 **Your intelligent PC software inventory and developer environment analysis tool.**
@@ -25,9 +26,13 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
     *   Game launcher hints are configurable via `systemsage_launcher_hints.json`.
 *   **Error Handling:** Includes error handling for registry access, file operations, and scan processes.
 
+
 ## How to Run System Sage
 
+System Sage can be run via its command-line interface or its new graphical user interface.
+
 1.  **Prerequisites:**
+
     *   Python 3.x installed on your Windows system (Tkinter support is usually included).
     *   The script `SystemSageV1.2.py` (or the latest version) and the `devenvaudit_src` subdirectory with its contents.
     *   Configuration files: `systemsage_component_keywords.json` and `systemsage_launcher_hints.json` (defaults are used if missing).
@@ -40,6 +45,7 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
     ```
 
 4.  **Run the script:**
+
     ```sh
     python SystemSageV1.2.py [options]
     ```
@@ -97,4 +103,5 @@ This project is licensed under the MIT License. See the `LICENSE.txt` file for d
 
 ---
 
-*System Sage - Helping you understand and manage your PC, one registry key and dev tool at a time!*
+System Sage: Gaze Deeper into Your PC, for the Wise to see. (insert poorly drawn sage here)
+
