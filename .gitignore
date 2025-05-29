@@ -1,0 +1,6 @@
+# Ignore system inventory files
+output/system_sage_inventory.json
+output/system_sage_inventory.md
+/output
+.json
+.md
