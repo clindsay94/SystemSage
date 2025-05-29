@@ -363,101 +363,26 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                         hive = str(app.get('SourceHive', 'N/A')).replace('|', '\\|')
                         reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|') 
                         f.write(f"| {name} | {version} | {publisher} | {location} | {size} | {status} | {remarks} | {hive} | {reg_key} |\n")
-                if app_count == 0:
-                    f.write("| No primary applications found. | | | | | | | | |\n")
 
-                if include_system_sage_components_flag: # This flag is for System Inventory components
-                    f.write("\n### Components & Drivers (System Inventory)\n")
+                if comp_count == 0:
+                     f.write("| No components/drivers found or filtering disabled. | | | | | | | | |\n")
+            
+            f.write("\n## Future Interactive Features (Planned)\n")
+            f.write("The following interactive features are planned for future versions of System Sage, focusing on direct user management capabilities:\n\n")
+            f.write("### Interactive Features & Management\n")
+            f.write("- **Interactive Orphan/Bad Path Management:**\n")
+            f.write("  - Guided review for entries flagged as \"Potential Orphan?\" or \"Broken install path.\"\n")
+            f.write("  - Tools to attempt automated file system searches for orphaned entries.\n")
+            f.write("  - User-confirmed actions to update incorrect `InstallLocation` values in the registry.\n")
+            f.write("  - User-confirmed actions to securely back up and offer deletion of orphaned registry keys.\n")
+            f.write("- **Desktop Shortcut Management:**\n")
+            f.write("  - List and analyze desktop shortcuts (.lnk files).\n")
+            f.write("  - Flag broken shortcuts or those pointing to uninstalled applications.\n")
+            f.write("  - Offer interactive options to clean up or repair problematic shortcuts.\n")
+            # Add other top-level items from README's "Interactive Features & Management" if they fit the "direct output" context.
+            # For now, the above two are the most direct from the README's section.
+            f.write("\n*Disclaimer: Modifying the Windows Registry or file system carries risks. Future interactive features will be designed with safety and user confirmation as top priorities. Always ensure you have backups before making significant system changes.*\n")
 
-                    f.write(header.replace("Application Name", "Component Name"))
-
-                    f.write(separator)
-                    comp_count = 0
-                    for app in system_inventory_data:
-                        if app.get('Category') == "Component/Driver":
-                            comp_count +=1
-                            name = str(app.get('DisplayName', 'N/A')).replace('|', '\\|')
-                            version = str(app.get('DisplayVersion', 'N/A')).replace('|', '\\|')
-                            publisher = str(app.get('Publisher', 'N/A')).replace('|', '\\|')
-                            location = str(app.get('InstallLocation', 'N/A')).replace('|', '\\|')
-                            size = str(app.get('InstallLocationSize', 'N/A')).replace('|', '\\|')
-                            status = str(app.get('PathStatus', 'N/A')).replace('|', '\\|')
-                            remarks = str(app.get('Remarks', '')).replace('|', '\\|')
-                            hive = str(app.get('SourceHive', 'N/A')).replace('|', '\\|')
-                            reg_key = str(app.get('RegistryKeyPath', 'N/A')).replace('|', '\\|')
-                            f.write(f"| {name} | {version} | {publisher} | {location} | {size} | {status} | {remarks} | {hive} | {reg_key} |\n")
-                    if comp_count == 0:
-                         f.write("| No components/drivers found or filtering disabled. | | | | | | | | |\n")
-            else:
-                f.write("No System Inventory data available.\n")
-
-            # --- DevEnvAudit Section ---
-            f.write("\n## Developer Environment Audit Results\n")
-            if devenv_components_data or devenv_env_vars_data or devenv_issues_data:
-                if devenv_components_data:
-                    f.write("\n### Detected Development Components\n")
-                    comp_header = "| Name | Version | Category | Path | Executable Path | ID |\n"
-                    comp_separator = "|---|---|---|---|---|---|\n"
-                    f.write(comp_header)
-                    f.write(comp_separator)
-                    for comp in devenv_components_data: # Using .to_dict() is for JSON, here access attributes directly
-                        name = str(comp.name).replace('|', '\\|')
-                        version = str(comp.version).replace('|', '\\|')
-                        category = str(comp.category).replace('|', '\\|')
-                        path = str(comp.path if comp.path else "N/A").replace('|', '\\|')
-                        exe_path = str(comp.executable_path if comp.executable_path else "N/A").replace('|', '\\|')
-                        comp_id = str(comp.id).replace('|', '\\|')
-                        f.write(f"| {name} | {version} | {category} | {path} | {exe_path} | {comp_id} |\n")
-                    if not devenv_components_data: f.write("| No development components detected. | | | | | |\n")
-
-
-
-                if devenv_env_vars_data:
-                    f.write("\n### Key Environment Variables\n")
-                    env_header = "| Name | Value | Scope |\n"
-                    env_separator = "|---|---|---|\n"
-                    f.write(env_header)
-                    f.write(env_separator)
-                    for ev in devenv_env_vars_data: # Using .to_dict() is for JSON
-                        name = str(ev.name).replace('|', '\\|')
-                        value = str(ev.value).replace('|', '\\|')
-                        scope = str(ev.scope).replace('|', '\\|')
-                        f.write(f"| {name} | {value} | {scope} |\n")
-                    if not devenv_env_vars_data: f.write("| No environment variables data. | | |\n")
-
-                if devenv_issues_data:
-                    f.write("\n### Identified Issues (DevEnvAudit)\n")
-                    issue_header = "| Severity | Description | Category | Component ID | Related Path |\n"
-                    issue_separator = "|---|---|---|---|---|\n"
-                    f.write(issue_header)
-                    f.write(issue_separator)
-                    for issue in devenv_issues_data: # Using .to_dict() is for JSON
-                        severity = str(issue.severity).replace('|', '\\|')
-                        desc = str(issue.description).replace('|', '\\|')
-                        cat = str(issue.category).replace('|', '\\|')
-                        comp_id_val = issue.component_id if issue.component_id is not None else "N/A"
-                        rel_path_val = issue.related_path if issue.related_path is not None else "N/A"
-                        comp_id = str(comp_id_val).replace('|', '\\|')
-                        rel_path = str(rel_path_val).replace('|', '\\|')
-                        f.write(f"| {severity} | {desc} | {cat} | {comp_id} | {rel_path} |\n")
-                    if not devenv_issues_data: f.write("| No issues identified by DevEnvAudit. | | | | |\n")
-            else:
-                f.write("No Developer Environment Audit data available.\n")
-
-
-
-            f.write("\n## Future Interactive Features (Planned)\n") # This section can remain as is or be updated
-            f.write("The following features are planned for future versions of System Sage to allow for interactive management:\n\n")
-            f.write("- **Orphaned Entry Review:** For items marked with 'Potential Orphan?' or 'Registry entry only?', System Sage will offer an option to:\n")
-            f.write("  - Attempt to locate related files/folders on disk (potentially using an external search tool if available).\n")
-            f.write("  - View detailed registry information.\n")
-            f.write("  - (With explicit user confirmation) Securely back up and then delete the selected registry key.\n")
-            f.write("- **Broken Path Resolution:** For items with 'Broken install path':\n")
-            f.write("  - Allow the user to browse and select the correct installation path.\n")
-            f.write("  - (With explicit user confirmation) Update the 'InstallLocation' value in the registry.\n")
-            f.write("- **Advanced Filtering & Sorting:** More options to filter and sort the displayed/reported software list based on various criteria (e.g., disk size, last used - if discoverable, category).\n")
-            f.write("- **Batch Actions:** For multiple selected items (e.g., multiple confirmed orphans), allow for batch processing of actions like registry key deletion (with appropriate safeguards and confirmations).\n\n")
-            f.write("*Disclaimer: Modifying the Windows Registry carries risks. Future interactive features will be designed with safety and user confirmation as top priorities. Always ensure you have backups before making significant system changes.*\n")
 
         logging.info(f"Combined Markdown report successfully saved to {full_path}") # Changed print to logging
 

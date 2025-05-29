@@ -77,14 +77,84 @@ While System Sage V2.0 is primarily a GUI application, some command-line options
 
 ## Future Planned Features
 
-System Sage is an evolving tool. Potential future enhancements include:
 
-*   **Interactive Orphan/Bad Path Management:** (As originally planned) Guided review and actions for problematic registry entries.
-*   **Deeper File System Analysis:** For entries with no registry `InstallLocation`.
-*   **Advanced Filtering & Sorting in GUI:** More granular control over displayed results.
-*   **Configuration GUI:** A dedicated section or dialog within the GUI to manage settings (scan paths for DevEnvAudit, keyword files, etc.).
-*   **Refined CLI Mode:** Option for direct CLI execution and report generation without GUI for automation.
-*   **Executable Bundling:** Packaging SystemSage as a standalone executable.
+System Sage is an evolving tool. Here are some features planned for future development, grouped by focus area:
+
+### Core Functionality Enhancements
+
+*   **Deeper File System Analysis:**
+    *   For entries with no registry `InstallLocation`, attempt to locate corresponding application folders/executables on specified drives or common installation directories.
+    *   Analyze folder contents to better identify application types or associated files.
+*   **Startup Program Analysis:**
+    *   List programs configured to run at system startup (from Registry, Startup folders).
+    *   Provide information about the impact of startup items.
+    *   Allow users to manage (enable/disable) startup entries (with appropriate permissions).
+*   **Duplicate Finder:**
+    *   Identify potentially duplicate installations of the same software based on name, version, or installation path heuristics.
+    *   Offer a review process for users to confirm and manage duplicates.
+*   **Change History/Snapshots:**
+    *   Allow users to save a snapshot of the current software inventory.
+    *   Compare different snapshots to identify changes over time (newly installed, uninstalled, or updated software).
+
+### Interactive Features & Management
+
+*   **Interactive Orphan/Bad Path Management:**
+    *   Guided review of entries flagged as "Potential Orphan?" or "Broken install path."
+    *   Options to attempt automated file system searches for orphaned entries based on application name or publisher.
+    *   User-confirmed actions to update incorrect `InstallLocation` values in the registry.
+    *   User-confirmed actions to (securely) back up and offer deletion of orphaned registry keys.
+*   **Desktop Shortcut Management:**
+    *   List all desktop shortcuts (.lnk files).
+    *   Analyze shortcuts to identify their targets, working directories, and validity.
+    *   Flag broken shortcuts or shortcuts pointing to uninstalled applications.
+    *   Offer options to clean up or repair problematic shortcuts.
+
+### Reporting & Output
+
+*   **Advanced Filtering & Sorting:**
+    *   More granular control over filtering and sorting the output based on criteria such as:
+        *   Installation date (if available).
+        *   Disk size.
+        *   Publisher.
+        *   Category (Application/Component).
+        *   Last used date (see "Software Usage Tracking Integration").
+*   **System Health/Bloat Score:**
+    *   A calculated score or qualitative assessment based on factors like:
+        *   Number of orphaned registry entries.
+        *   Volume of broken installation paths.
+        *   Presence of potentially unwanted programs (PUPs) (requires definition).
+        *   Large applications that haven't been used in a long time (requires usage tracking).
+    *   Provide recommendations based on the score.
+
+### User Experience & Interface
+
+*   **Enhanced User Interface:**
+    *   Potential for a more interactive command-line interface (e.g., using `prompt_toolkit` for guided actions).
+    *   Future consideration for a basic Graphical User Interface (GUI) for easier navigation and management.
+*   **Localization:**
+    *   Support for multiple languages in the UI and reports.
+
+### Extensibility & Customization
+
+*   **External Configuration:**
+    *   Allow customization of keywords (for components, launchers, potentially PUPs) via external configuration files (e.g., JSON, YAML).
+    *   User-defined rules for categorization or remark generation.
+*   **Plugin System:**
+    *   Develop a plugin architecture to allow community contributions for:
+        *   Specific application detection modules.
+        *   Custom analysis routines (e.g., for niche software types).
+        *   New report formats.
+*   **Portable Mode:**
+    *   Offer a version of System Sage that can run without installation (e.g., from a USB drive), keeping configuration and output self-contained.
+
+### Ambitious Long-Term Goals
+
+*   **Software Usage Tracking Integration (Ambitious & Complex):**
+    *   Investigate methods to estimate last used dates for applications. This might involve:
+        *   Checking system event logs (limited).
+        *   Analyzing prefetch files or other OS artifacts (requires deep OS knowledge).
+        *   Integrating with known application-specific logs if APIs or standards exist (unlikely to be universal).
+    *   *This is a highly complex feature and may require external tools, advanced permissions, or have significant limitations.*
 
 ## Development & Acknowledgements
 
