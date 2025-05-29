@@ -1,4 +1,4 @@
-# System Sage - V2.2 (Enhanced DevEnvAudit Integration)
+# System Sage - V2.0
 
 **Your intelligent PC software inventory, developer environment, and overclocking logbook analysis tool.**
 
@@ -6,12 +6,13 @@ System Sage is a Python application with a Graphical User Interface (GUI) design
 1.  **System Inventory:** Queries the Windows Registry for installed software, validates paths, and calculates disk usage.
 2.  **Developer Environment Audit (DevEnvAudit):** A powerful module that analyzes development tools, configurations, environment variables, and potential issues in your dev setup. Its results are displayed in detail within a dedicated GUI tab and included in combined system reports.
 3.  **Overclocker's Logbook (OCL):** Manages overclocking profiles and logs, leveraging a local SQLite database, with its own dedicated GUI tab.
+4.  **AI Core (Groundwork):** Foundational elements for future AI-powered system analysis and suggestions using Google's Gemma models.
 
 This project is primarily developed by Connor Lindsay (clindsay94) with Gemini AI assistance.
 
 ## Core Features
 
-*   **Graphical User Interface (GUI):** System Sage now runs as a GUI application, providing a user-friendly way to initiate scans and view results in organized tabs for "System Inventory," "Developer Environment Audit," and "Overclocker's Logbook."
+*   **Graphical User Interface (GUI):** System Sage now runs as a GUI application, providing a user-friendly way to initiate scans and view results in organized tabs for "System Inventory," "Developer Environment Audit," and "Overclocker's Logbook." A new "AI Insights" menu provides access to (currently simulated) AI analysis.
 *   **Comprehensive Software Inventory:**
     *   Scans multiple registry hives for installed applications and components.
     *   Validates installation paths and calculates disk usage (toggleable).
@@ -21,36 +22,41 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
     *   Collects and analyzes system and user environment variables, highlighting potential issues (e.g., incorrect PATH entries).
     *   Detects common issues and misconfigurations in development setups.
     *   Results (detected tools, environment variables, issues) are displayed in structured Treeview tables within the "Developer Environment Audit" GUI tab.
-    *   Current DevEnvAudit configuration (scan paths, exclusions) can be viewed within its GUI tab.
-    *   (Planned: Filtering and sorting options for DevEnvAudit results).
 *   **Overclocker's Logbook (OCL) Module Integration:**
     *   Manages overclocking profiles (BIOS/UEFI settings, memory timings, CPU OC, etc.).
     *   View profile lists, details (settings & logs), create new (simplified) profiles, and add log entries.
     *   Data stored in a local SQLite database (`ocl_module_src/system_sage_olb.db`).
-    *   Placeholder for future PC-to-Android profile synchronization.
-    *   OCL API and architecture documented in `docs/architecture.md`.
+*   **AI Integration Groundwork (Gemma LLM):**
+    *   Introduces the `system_sage/ai_core/` package, laying the foundation for future AI capabilities.
+    *   Includes placeholder modules:
+        *   `model_loader.py`: Simulates checking for local Gemma model availability and "loading" the model. It also contains a placeholder for analyzing broader system data.
+        *   `file_manager_ai.py`: Simulates providing AI-driven file management suggestions based on the software inventory.
+    *   The "AI Insights" menu in the GUI includes a "Run System Analysis with AI" option that triggers these simulated functions, showcasing the intended workflow.
+    *   The future goal is to leverage a local Gemma model to provide intelligent analysis of system data, offer optimization suggestions, and assist with tasks like file management.
 *   **Combined Reporting:**
     *   Generate comprehensive JSON and Markdown reports via the GUI ("File" > "Save Combined Report").
     *   Reports include full data from System Inventory and Developer Environment Audit scans.
 *   **Externalized Configuration:**
     *   SystemSage keywords/hints: `systemsage_component_keywords.json`, `systemsage_launcher_hints.json`.
     *   DevEnvAudit settings: `devenvaudit_src/devenvaudit_config.json`, `devenvaudit_src/tools_database.json`, `devenvaudit_src/software categorization database.json`.
+    *   AI Core (future): Will include configuration for model paths, parameters, etc.
 *   **Error Handling:** Includes error handling for registry access, file operations, and scan processes.
 
 ## How to Run System Sage
 
 1.  **Prerequisites:**
     *   Python 3.x installed on your Windows system (Tkinter support is usually included).
-    *   The script `SystemSageV1.2.py` (or the latest version).
-    *   The `devenvaudit_src/` directory and its contents (all DevEnvAudit module files).
+    *   The script `SystemSageV2.0.py` (or the latest version).
+    *   The `devenvaudit_src/` directory and its contents.
     *   The `ocl_module_src/` directory and its contents.
+    *   The `system_sage/ai_core/` directory and its contents (including `model_files/gemma_model_files_exist.flag` for current AI simulation).
     *   Relevant JSON configuration files (defaults may apply if some are missing).
 
 2.  **Open a Command Prompt or PowerShell.**
 3.  **Navigate to the directory** where SystemSage files are saved.
 4.  **Run the script:**
     ```sh
-    python SystemSageV1.2.py [options]
+    python SystemSageV2.0.py [options]
     ```
     This launches the System Sage GUI.
 
@@ -60,8 +66,10 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
 *   **Running Scans:**
     *   Use the "Scan" menu to start "System Inventory Scan" or "Run DevEnv Audit."
     *   Scan progress updates in the status bar. Results populate the respective tabs.
-    *   For DevEnvAudit, view its current configuration via the "View/Refresh Loaded Configuration" button in its tab.
-*   **OCL Profiles:** Managed within the "Overclocker's Logbook" tab (refresh list, view details, save new, add log).
+*   **AI Insights:**
+    *   Use the "AI Insights" menu and select "Run System Analysis with AI".
+    *   This currently uses placeholder functions to simulate model loading and analysis, providing example insights in a message box.
+*   **OCL Profiles:** Managed within the "Overclocker's Logbook" tab.
 *   **Saving Reports:** "File" > "Save Combined Report (JSON & MD)" saves System Inventory and DevEnvAudit data.
 
 ## Command-Line Options
@@ -70,37 +78,46 @@ While System Sage is primarily GUI-driven, some CLI options can set initial defa
 *   `--output-dir <directory_name>`: Default output directory for reports.
 *   `--no-disk-usage`: Affects System Inventory's disk usage calculation default.
 *   `--md-include-components` / `--md-no-components`: Default for System Inventory components in Markdown.
-*   `--run-devenv-audit`: GUI initiated; flag noted but no separate CLI scan.
 *   `--help`: Shows CLI help and exits.
 
 *Note: Direct CLI report generation without GUI is not a primary feature of this version.*
 
-## Known Issues & Omissions (This iteration)
+## Known Issues & Omissions (V2.0)
 
-*   **DevEnvAudit HTML Report Formatting:** The planned refactor of `devenvaudit_src/report_generator.py` to improve HTML data serialization (especially for complex/nested data) was not successfully implemented due to persistent tool errors during file modification attempts. HTML reports from DevEnvAudit might not render complex data structures optimally.
-*   **OCL Data in Combined Reports:** Summaries of OCL profiles are NOT included in the main JSON/Markdown reports due to persistent tool errors preventing the necessary code changes.
-*   **Unit Tests for OCL Integration:** Were NOT implemented due to persistent tool errors preventing test file creation/modification.
-*   **Unit Tests for DevEnvAudit Integration:** (Planned for this version, status pending).
+*   **AI Functionality is Simulated:** The current AI integration uses placeholder functions. No actual Gemma model is loaded or used for analysis. The "AI Insights" feature demonstrates the intended workflow but provides hardcoded example responses.
+*   **DevEnvAudit HTML Report Formatting:** The planned refactor of `devenvaudit_src/report_generator.py` to improve HTML data serialization was not implemented.
+*   **OCL Data in Combined Reports:** Summaries of OCL profiles are NOT included in the main JSON/Markdown reports.
+*   **Unit Tests:** Comprehensive unit tests for OCL, DevEnvAudit integration, and AI Core modules are pending.
 *   **`README.txt` Outdated:** The old `README.txt` file is outdated. This `README.md` is the current primary documentation.
 
 ## Future Planned Features
 
-*   Full implementation of "Save Current System Configuration as New OCL Profile" with actual system data capture.
-*   Full implementation of "Update Selected OCL Profile" with detailed editing capabilities.
-*   OCL Profile Synchronization (PC-to-Android).
-*   Filtering/Sorting for DevEnvAudit results in GUI.
-*   Editable DevEnvAudit configuration in GUI.
-*   Interactive Orphan/Bad Path Management (System Inventory).
-*   Advanced Filtering & Sorting in GUI (System Inventory).
-*   Configuration GUI for all settings.
-*   Refined CLI Mode.
-*   Executable Bundling.
+*   **Full AI Integration (Gemma LLM):**
+    *   Full integration of Gemma 3-12B-IT (or similar local model) for advanced system data analysis and interpretation.
+    *   AI-powered file management suggestions (identifying redundant files, optimizing storage, managing icons based on actual system scan data).
+    *   User interaction with AI insights through the GUI, allowing for feedback and refinement of suggestions.
+    *   AI-driven troubleshooting tips based on identified issues from DevEnvAudit or System Inventory.
+*   **OCL Enhancements:**
+    *   Full implementation of "Save Current System Configuration as New OCL Profile" with actual system data capture.
+    *   Full implementation of "Update Selected OCL Profile" with detailed editing capabilities.
+    *   OCL Profile Synchronization (PC-to-Android).
+*   **GUI Enhancements:**
+    *   Filtering/Sorting for DevEnvAudit results in GUI.
+    *   Editable DevEnvAudit configuration in GUI.
+    *   Interactive Orphan/Bad Path Management (System Inventory).
+    *   Advanced Filtering & Sorting in GUI (System Inventory).
+    *   Configuration GUI for all settings.
+*   **General:**
+    *   Refined CLI Mode with more comprehensive reporting options.
+    *   Executable Bundling (e.g., using PyInstaller).
+    *   Comprehensive Unit Test Coverage.
 
 ## Development & Acknowledgements
 
 This project is primarily developed by **Connor Lindsay (clindsay94)**.
 The `devenvaudit_src` modules are from the DevEnvAudit project.
 The `ocl_module_src` modules are from the Overclocker's Logbook project.
+The `system_sage.ai_core` package provides the foundation for AI integration.
 Significant AI assistance provided by Gemini (Google).
 
 ## License
