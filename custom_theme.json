@@ -1,0 +1,69 @@
+{
+  "CTk": {
+    "fg_color": ["#ECEFF1", "#263238"]
+  },
+  "CTkFrame": {
+    "fg_color": ["#FFFFFF", "#37474F"],
+    "top_fg_color": ["#FAFAFA", "#2C3A41"],
+    "border_color": ["#D0D0D0", "#2F3C42"]
+  },
+  "CTkButton": {
+    "fg_color": ["#5E35B1", "#7E57C2"],
+    "hover_color": ["#512DA8", "#673AB7"],
+    "text_color": ["#FFFFFF", "#FFFFFF"],
+    "border_width": 0,
+    "corner_radius": 6
+  },
+  "CTkLabel": {
+    "text_color": ["#212121", "#E0E0E0"]
+  },
+  "CTkEntry": {
+    "fg_color": ["#F5F5F5", "#455A64"],
+    "border_color": ["#B0BEC5", "#546E7A"],
+    "text_color": ["#212121", "#E0E0E0"],
+    "corner_radius": 6
+  },
+  "CTkTextbox": {
+    "fg_color": ["#F5F5F5", "#455A64"],
+    "border_color": ["#B0BEC5", "#546E7A"],
+    "text_color": ["#212121", "#E0E0E0"],
+    "corner_radius": 6
+  },
+  "CTkTabview": {
+    "fg_color": ["#ECEFF1", "#263238"],
+    "tab_fg_color": ["#FFFFFF", "#37474F"],
+    "segmented_button_fg_color": ["#FFFFFF", "#37474F"],
+    "segmented_button_selected_color": ["#B39DDB", "#7E57C2"],
+    "segmented_button_unselected_color": ["#E0E0E0", "#4A5A64"],
+    "segmented_button_selected_hover_color": ["#A38DD0", "#6F47B2"],
+    "text_color": ["#212121", "#E0E0E0"],
+    "border_color": ["#D0D0D0", "#2F3C42"],
+    "corner_radius": 6
+  },
+  "CTkTable": {
+    "fg_color": ["#FFFFFF", "#37474F"],
+    "header_fg_color": ["#EDE7F6", "#4A0072"],
+    "hover_color": ["#E8EAF6", "#4A5A64"],
+    "text_color": ["#212121", "#E0E0E0"],
+    "header_text_color": ["#5E35B1", "#EDE7F6"],
+    "corner_radius": 6
+  },
+  "CTkScrollbar": {
+    "fg_color": ["#CFD8DC", "#455A64"],
+    "button_color": ["#B0BEC5", "#546E7A"],
+    "button_hover_color": ["#90A4AE", "#607D8B"]
+  },
+  "CTkDialog": {
+    "fg_color": ["#FAFAFA", "#2C3A41"],
+    "button_fg_color": ["#5E35B1", "#7E57C2"],
+    "button_hover_color": ["#512DA8", "#673AB7"],
+    "button_text_color": ["#FFFFFF", "#FFFFFF"],
+    "entry_fg_color": ["#F5F5F5", "#455A64"],
+    "entry_border_color": ["#B0BEC5", "#546E7A"],
+    "entry_text_color": ["#212121", "#E0E0E0"],
+    "title_text_color": ["#212121", "#E0E0E0"]
+  },
+  "CTkInputDialog": {
+     "fg_color": ["#FAFAFA", "#2C3A41"]
+  }
+}

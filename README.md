@@ -2,7 +2,7 @@
 
 **Your intelligent PC software inventory, developer environment, and overclocking logbook analysis tool.**
 
-System Sage is a Python application with a Graphical User Interface (GUI) designed to provide users with a comprehensive understanding and management suite for their Windows system. It integrates three core modules:
+System Sage is a Python application with a Graphical User Interface (GUI) designed to provide users with a comprehensive understanding and management suite for their Windows system. The GUI is built using **CustomTkinter** for a modern look and feel. It integrates three core modules:
 1.  **System Inventory:** Queries the Windows Registry for installed software, validates paths, and calculates disk usage.
 2.  **Developer Environment Audit (DevEnvAudit):** A powerful module that analyzes development tools, configurations, environment variables, and potential issues in your dev setup. Its results are displayed in detail within a dedicated GUI tab and included in combined system reports.
 3.  **Overclocker's Logbook (OCL):** Manages overclocking profiles and logs, leveraging a local SQLite database, with its own dedicated GUI tab.
@@ -10,9 +10,12 @@ System Sage is a Python application with a Graphical User Interface (GUI) design
 
 This project is primarily developed by Connor Lindsay (clindsay94) with Gemini AI assistance.
 
+*Note: The UI has been significantly overhauled using CustomTkinter. Screenshots in this README may be outdated and will be updated in a future revision to reflect the new appearance.*
+
 ## Core Features
 
-*   **Graphical User Interface (GUI):** System Sage now runs as a GUI application, providing a user-friendly way to initiate scans and view results in organized tabs for "System Inventory," "Developer Environment Audit," and "Overclocker's Logbook." A new "AI Insights" menu provides access to (currently simulated) AI analysis.
+
+*   **Graphical User Interface (GUI):** System Sage now runs as a GUI application, built with **CustomTkinter** to provide a modern user experience. It offers a user-friendly way to initiate scans and view results in organized tabs for "System Inventory," "Developer Environment Audit," and "Overclocker's Logbook." Standard dialogs have been replaced with CustomTkinter equivalents for a consistent look and feel. A new "AI Insights" menu provides access to (currently simulated) AI analysis.
 *   **Comprehensive Software Inventory:**
     *   Scans multiple registry hives for installed applications and components.
     *   Validates installation paths and calculates disk usage (toggleable).
@@ -21,7 +24,8 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
     *   Identifies a wide range of installed development tools (IDEs, languages, SDKs, VCS, etc.) and their versions.
     *   Collects and analyzes system and user environment variables, highlighting potential issues (e.g., incorrect PATH entries).
     *   Detects common issues and misconfigurations in development setups.
-    *   Results (detected tools, environment variables, issues) are displayed in structured Treeview tables within the "Developer Environment Audit" GUI tab.
+    *   Results (detected tools, environment variables, issues) are displayed in structured tables using **`CTkTable`** (a CustomTkinter-compatible table widget) within the "Developer Environment Audit" GUI tab.
+
 *   **Overclocker's Logbook (OCL) Module Integration:**
     *   Manages overclocking profiles (BIOS/UEFI settings, memory timings, CPU OC, etc.).
     *   View profile lists, details (settings & logs), create new (simplified) profiles, and add log entries.
@@ -45,7 +49,11 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
 ## How to Run System Sage
 
 1.  **Prerequisites:**
-    *   Python 3.x installed on your Windows system (Tkinter support is usually included).
+
+    *   Python 3.x installed on your Windows system.
+    *   `customtkinter` library: `pip install customtkinter`
+    *   `CTkTable` library: `pip install CTkTable`
+
     *   The script `SystemSageV2.0.py` (or the latest version).
     *   The `devenvaudit_src/` directory and its contents.
     *   The `ocl_module_src/` directory and its contents.
