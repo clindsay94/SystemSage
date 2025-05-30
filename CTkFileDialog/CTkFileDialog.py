@@ -53,5 +53,3 @@ if __name__ == '__main__':
     # dialog_cancelled = CTkFileDialog(title="Test Cancel")
     # dialog_cancelled.path = None # Manually simulate cancellation
     # print(f"Cancelled path: {dialog_cancelled.path}")
-
-```

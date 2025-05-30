@@ -109,10 +109,6 @@ from devenvaudit_src.scan_logic import EnvironmentScanner
 # --- OCL Module Imports ---
 from ocl_module_src import olb_api as ocl_api
 
-# --- AI Core Module Imports ---
-from system_sage.ai_core import model_loader as ai_model_loader
-from system_sage.ai_core import file_manager_ai
-
 # --- Configuration Loading Function ---
 def load_json_config(filename, default_data):
     try:
@@ -242,7 +238,7 @@ def get_installed_software(calculate_disk_usage_flag):
         except FileNotFoundError: logging.info(f"Registry path not found (this might be normal): {hive_display_name} - {path_suffix}")
         except Exception as e_outer: logging.error(f"An error occurred accessing registry path {hive_display_name} - {path_suffix}: {e_outer}", exc_info=True)
     return sorted(software_list, key=lambda x: str(x.get('DisplayName','')).lower())
-def output_to_json_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.json"):
+def output_to_json_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.json", ocl_summary_data=None):
     combined_data = {} 
     is_sys_inv_placeholder = system_inventory_data and len(system_inventory_data) == 1 and system_inventory_data[0].get('Category') == "Informational"
     if system_inventory_data and not is_sys_inv_placeholder: combined_data["systemInventory"] = system_inventory_data
@@ -251,14 +247,23 @@ def output_to_json_combined(system_inventory_data, devenv_components_data, deven
     if devenv_env_vars_data: devenv_audit_data["environmentVariables"] = [ev.to_dict() for ev in devenv_env_vars_data]
     if devenv_issues_data: devenv_audit_data["identifiedIssues"] = [issue.to_dict() for issue in devenv_issues_data]
     if devenv_audit_data: combined_data["devEnvAudit"] = devenv_audit_data
-    if not combined_data and is_sys_inv_placeholder : combined_data["systemInventory"] = system_inventory_data
-    if not combined_data: logging.info("No data to save to JSON report."); return
+    
+    if ocl_summary_data:
+        combined_data["oclSummary"] = {
+            "profile_count": len(ocl_summary_data),
+            "profiles": ocl_summary_data 
+        }
+        
+    if not combined_data and is_sys_inv_placeholder : combined_data["systemInventory"] = system_inventory_data # Ensure placeholder is added if nothing else
+    # Check if combined_data is still empty (e.g. only placeholder sys_inv and no ocl_summary)
+    if not combined_data and not ocl_summary_data: # If only placeholder sys_inv was there, and no OCL, it's already in. If not even placeholder, this is true.
+        logging.info("No data to save to JSON report."); return
     try:
         os.makedirs(output_dir, exist_ok=True); full_path = os.path.join(output_dir, filename)
         with open(full_path, 'w', encoding='utf-8') as f: json.dump(combined_data, f, ensure_ascii=False, indent=4)
         logging.info(f"Combined JSON report successfully saved to {full_path}")
     except Exception as e: logging.error(f"Error saving combined JSON file to {output_dir}: {e}", exc_info=True); raise
-def output_to_markdown_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.md", include_system_sage_components_flag=True):
+def output_to_markdown_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.md", include_system_sage_components_flag=True, ocl_summary_data=None):
     try: 
         os.makedirs(output_dir, exist_ok=True); full_path = os.path.join(output_dir, filename)
         with open(full_path, 'w', encoding='utf-8') as f:
@@ -281,8 +286,33 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                         else: f.write("*No components/drivers found or component reporting is disabled.*\n"); f.write("\n")
             else: f.write("*No system inventory data collected.*\n\n")
             f.write("## Developer Environment Audit\n\n")
-            if devenv_components_data or devenv_env_vars_data or devenv_issues_data: f.write("*DevEnvAudit details omitted for brevity in this example.*\n") 
+            if devenv_components_data or devenv_env_vars_data or devenv_issues_data: f.write("*DevEnvAudit details omitted for brevity in this example.*\n\n") # Added extra \n for spacing
             else: f.write("*No data collected by Developer Environment Audit.*\n\n")
+
+            # --- OCL Summary Section ---
+            f.write("## Overclocker's Logbook Summary\n\n")
+            if ocl_summary_data:
+                f.write(f"- **Total Profiles:** {len(ocl_summary_data)}\n\n")
+                if ocl_summary_data: # Only add table if there are profiles
+                    f.write("### Recent Profiles Overview\n\n")
+                    f.write("| Profile Name        | Last Modified Date   | Description (Optional) |\n")
+                    f.write("|---------------------|----------------------|------------------------|\n")
+                    # Limiting to first 5 profiles for brevity in report, can be adjusted
+                    for profile in ocl_summary_data[:5]: 
+                        name = profile.get('name', 'N/A')
+                        mod_date = profile.get('last_modified_date', 'N/A')
+                        # Truncate description if too long
+                        desc = profile.get('description', 'N/A')
+                        if len(desc) > 50:
+                            desc = desc[:47] + "..."
+                        f.write(f"| {name} | {mod_date} | {desc} |\n")
+                    if len(ocl_summary_data) > 5:
+                        f.write(f"| ...and {len(ocl_summary_data) - 5} more profiles. |\n")
+                    f.write("\n") 
+            else:
+                f.write("*No OCL profiles found.*\n\n")
+            # --- End OCL Summary Section ---
+            
         logging.info(f"Combined Markdown report successfully saved to {full_path}")
     except Exception as e: logging.error(f"Error saving combined Markdown file: {e}", exc_info=True); raise
 class SystemSageApp(customtkinter.CTk):
@@ -320,7 +350,6 @@ class SystemSageApp(customtkinter.CTk):
        
         self.inventory_scan_button = None
         self.devenv_audit_button = None
-        self.ai_analysis_button = None
         
         self.inventory_table = None 
         self.devenv_components_table = None 
@@ -374,13 +403,6 @@ class SystemSageApp(customtkinter.CTk):
             height=action_button_height, hover_color=self.button_hover_color
         )
         self.devenv_audit_button.pack(side=tk.LEFT, padx=action_button_padx, pady=action_button_pady)
-        
-        self.ai_analysis_button = customtkinter.CTkButton(
-            self.action_bar_frame, text="AI System Analysis", command=self.run_ai_system_analysis, 
-            font=self.button_font, corner_radius=self.corner_radius_soft, 
-            height=action_button_height, hover_color=self.button_hover_color
-        )
-        self.ai_analysis_button.pack(side=tk.LEFT, padx=action_button_padx, pady=action_button_pady)
         
         self.exit_button = customtkinter.CTkButton(
             self.action_bar_frame, text="Exit", command=self.quit_app, 
@@ -539,7 +561,6 @@ class SystemSageApp(customtkinter.CTk):
             else:
                 self.inventory_scan_button.configure(state=button_state)
         if self.devenv_audit_button: self.devenv_audit_button.configure(state=button_state)
-        if self.ai_analysis_button: self.ai_analysis_button.configure(state=button_state)
 
     def start_system_inventory_scan(self):
         if self.scan_in_progress and IS_WINDOWS: show_custom_messagebox(self, "Scan In Progress", "A scan is already running.", dialog_type="warning"); return
@@ -752,35 +773,17 @@ class SystemSageApp(customtkinter.CTk):
                 self.ocl_profile_details_text.delete("0.0", tk.END)
                 self.ocl_profile_details_text.configure(state=customtkinter.DISABLED) # Use CTk constant
 
-    def run_ai_system_analysis(self): 
-        self.status_bar.configure(text="Initiating AI System Analysis...")
-        logging.info("AI System Analysis initiated by user.")
+    def _fetch_ocl_summary(self):
+        """Helper to fetch OCL summary data and log potential errors."""
         try:
-            model_loaded_successfully = ai_model_loader.load_gemma_model() 
-            if model_loaded_successfully:
-                data_to_analyze = {}
-                inventory_for_ai = [app for app in self.system_inventory_results if app.get('Category') != "Informational"] if self.system_inventory_results else []
-                if inventory_for_ai: data_to_analyze["inventory_summary"] = {"app_count": len(inventory_for_ai), "first_few_apps": [app.get("DisplayName", "N/A") for app in inventory_for_ai[:3]]}
-                else: data_to_analyze["inventory_summary"] = "No system inventory data available or scan not run."
-                if self.devenv_components_results: data_to_analyze["devenv_summary"] = {"component_count": len(self.devenv_components_results), "env_var_count": len(self.devenv_env_vars_results), "issue_count": len(self.devenv_issues_results)}
-                else: data_to_analyze["devenv_summary"] = "No developer environment data available or scan not run."
-                if not inventory_for_ai and not self.devenv_components_results: data_to_analyze["generic_query"] = "General system health check requested as no specific scan data is loaded."
-                logging.info(f"Sending data to AI for analysis (sample): {str(data_to_analyze)[:250]}...") 
-                ai_response_general = ai_model_loader.analyze_system_data(data_to_analyze)
-                file_suggestions = file_manager_ai.get_file_management_suggestions(inventory_for_ai)
-                combined_ai_response = f"{ai_response_general}\n\n--- File Management Suggestions (Simulated) ---\n"
-                if file_suggestions:
-                    for sug in file_suggestions: combined_ai_response += f"- Suggestion: {sug['suggestion']}\n  Action: {sug['action']}\n  Related: {sug.get('related_software', 'N/A')}\n\n"
-                else: combined_ai_response += "No specific file management suggestions at this time.\n"
-                show_custom_messagebox(self, "AI Analysis Result (Simulated)", combined_ai_response, dialog_type="info")
-                self.status_bar.configure(text="AI Analysis Complete.")
-            else:
-                show_custom_messagebox(self, "AI Model Error", "AI Model could not be loaded (simulated). See console/logs for details.", dialog_type="error")
-                self.status_bar.configure(text="AI Model loading failed.")
+            ocl_summary = ocl_api.get_all_profiles()
+            if not ocl_summary:
+                logging.info("No OCL profiles found or OCL module returned empty list.")
+            return ocl_summary
         except Exception as e:
-            logging.error(f"Error during AI System Analysis: {e}", exc_info=True)
-            show_custom_messagebox(self, "AI Analysis Error", f"An unexpected error occurred during AI analysis: {e}", dialog_type="error")
-            self.status_bar.configure(text="AI Analysis encountered an error.")
+            logging.error(f"Error fetching OCL profiles summary: {e}", exc_info=True)
+            show_custom_messagebox(self, "OCL Data Error", f"Could not fetch OCL profile summary for report: {e}", dialog_type="warning")
+            return [] # Return empty list on error to prevent report generation failure
 
     def save_combined_report(self): 
         dialog = CTkFileDialog(
@@ -795,14 +798,34 @@ class SystemSageApp(customtkinter.CTk):
             show_custom_messagebox(self, "Cancelled", "Save report cancelled.", dialog_type="info")
             return
         try:
+            ocl_profiles_summary = self._fetch_ocl_summary() # Fetch OCL data
+
             md_include_components = self.cli_args.markdown_include_components_flag if self.cli_args else DEFAULT_MARKDOWN_INCLUDE_COMPONENTS
             sys_inv_data_for_report = self.system_inventory_results
             is_sys_inv_placeholder = (self.system_inventory_results and len(self.system_inventory_results) == 1 and self.system_inventory_results[0].get('Category') == "Informational")
 
-            if is_sys_inv_placeholder and (self.devenv_components_results or self.devenv_env_vars_results or self.devenv_issues_results): sys_inv_data_for_report = [] 
-            elif is_sys_inv_placeholder: pass 
-            output_to_json_combined(sys_inv_data_for_report, self.devenv_components_results, self.devenv_env_vars_results, self.devenv_issues_results, output_dir)
-            output_to_markdown_combined(sys_inv_data_for_report, self.devenv_components_results, self.devenv_env_vars_results, self.devenv_issues_results, output_dir, include_system_sage_components_flag=md_include_components)
+            # If sys_inv is just a placeholder AND we have other actual data (DevEnv or OCL), don't include the placeholder text.
+            if is_sys_inv_placeholder and (self.devenv_components_results or self.devenv_env_vars_results or self.devenv_issues_results or ocl_profiles_summary): 
+                sys_inv_data_for_report = [] 
+            
+            output_to_json_combined(
+                sys_inv_data_for_report, 
+                self.devenv_components_results, 
+                self.devenv_env_vars_results, 
+                self.devenv_issues_results, 
+                output_dir,
+                ocl_summary_data=ocl_profiles_summary
+            )
+            # Note: output_to_markdown_combined will also need ocl_summary_data, but its internal logic is not changed in this subtask
+            output_to_markdown_combined(
+                sys_inv_data_for_report, 
+                self.devenv_components_results, 
+                self.devenv_env_vars_results, 
+                self.devenv_issues_results, 
+                output_dir, 
+                include_system_sage_components_flag=md_include_components,
+                ocl_summary_data=ocl_profiles_summary 
+            )
             show_custom_messagebox(self, "Reports Saved", f"Combined reports saved to: {output_dir}", dialog_type="info")
         except Exception as e:
             logging.error(f"Error saving reports: {e}\n{traceback.format_exc()}", exc_info=True)
@@ -878,4 +901,5 @@ if __name__ == "__main__":
         except Exception as critical_e: 
             print(f"CRITICAL FALLBACK ERROR (cannot show GUI messagebox): {critical_e}", file=sys.stderr)
             print(f"Original critical error: {e}", file=sys.stderr)
-```
+
+[end of systemsage_main.py]
