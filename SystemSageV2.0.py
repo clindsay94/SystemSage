@@ -109,10 +109,6 @@ from devenvaudit_src.scan_logic import EnvironmentScanner
 # --- OCL Module Imports ---
 from ocl_module_src import olb_api as ocl_api
 
-# --- AI Core Module Imports ---
-from system_sage.ai_core import model_loader as ai_model_loader
-from system_sage.ai_core import file_manager_ai
-
 # --- Configuration Loading Function ---
 def load_json_config(filename, default_data):
     try:
@@ -320,7 +316,6 @@ class SystemSageApp(customtkinter.CTk):
        
         self.inventory_scan_button = None
         self.devenv_audit_button = None
-        self.ai_analysis_button = None
         
         self.inventory_table = None 
         self.devenv_components_table = None 
@@ -374,13 +369,6 @@ class SystemSageApp(customtkinter.CTk):
             height=action_button_height, hover_color=self.button_hover_color
         )
         self.devenv_audit_button.pack(side=tk.LEFT, padx=action_button_padx, pady=action_button_pady)
-        
-        self.ai_analysis_button = customtkinter.CTkButton(
-            self.action_bar_frame, text="AI System Analysis", command=self.run_ai_system_analysis, 
-            font=self.button_font, corner_radius=self.corner_radius_soft, 
-            height=action_button_height, hover_color=self.button_hover_color
-        )
-        self.ai_analysis_button.pack(side=tk.LEFT, padx=action_button_padx, pady=action_button_pady)
         
         self.exit_button = customtkinter.CTkButton(
             self.action_bar_frame, text="Exit", command=self.quit_app, 
@@ -539,7 +527,6 @@ class SystemSageApp(customtkinter.CTk):
             else:
                 self.inventory_scan_button.configure(state=button_state)
         if self.devenv_audit_button: self.devenv_audit_button.configure(state=button_state)
-        if self.ai_analysis_button: self.ai_analysis_button.configure(state=button_state)
 
     def start_system_inventory_scan(self):
         if self.scan_in_progress and IS_WINDOWS: show_custom_messagebox(self, "Scan In Progress", "A scan is already running.", dialog_type="warning"); return
@@ -752,36 +739,6 @@ class SystemSageApp(customtkinter.CTk):
                 self.ocl_profile_details_text.delete("0.0", tk.END)
                 self.ocl_profile_details_text.configure(state=customtkinter.DISABLED) # Use CTk constant
 
-    def run_ai_system_analysis(self): 
-        self.status_bar.configure(text="Initiating AI System Analysis...")
-        logging.info("AI System Analysis initiated by user.")
-        try:
-            model_loaded_successfully = ai_model_loader.load_gemma_model() 
-            if model_loaded_successfully:
-                data_to_analyze = {}
-                inventory_for_ai = [app for app in self.system_inventory_results if app.get('Category') != "Informational"] if self.system_inventory_results else []
-                if inventory_for_ai: data_to_analyze["inventory_summary"] = {"app_count": len(inventory_for_ai), "first_few_apps": [app.get("DisplayName", "N/A") for app in inventory_for_ai[:3]]}
-                else: data_to_analyze["inventory_summary"] = "No system inventory data available or scan not run."
-                if self.devenv_components_results: data_to_analyze["devenv_summary"] = {"component_count": len(self.devenv_components_results), "env_var_count": len(self.devenv_env_vars_results), "issue_count": len(self.devenv_issues_results)}
-                else: data_to_analyze["devenv_summary"] = "No developer environment data available or scan not run."
-                if not inventory_for_ai and not self.devenv_components_results: data_to_analyze["generic_query"] = "General system health check requested as no specific scan data is loaded."
-                logging.info(f"Sending data to AI for analysis (sample): {str(data_to_analyze)[:250]}...") 
-                ai_response_general = ai_model_loader.analyze_system_data(data_to_analyze)
-                file_suggestions = file_manager_ai.get_file_management_suggestions(inventory_for_ai)
-                combined_ai_response = f"{ai_response_general}\n\n--- File Management Suggestions (Simulated) ---\n"
-                if file_suggestions:
-                    for sug in file_suggestions: combined_ai_response += f"- Suggestion: {sug['suggestion']}\n  Action: {sug['action']}\n  Related: {sug.get('related_software', 'N/A')}\n\n"
-                else: combined_ai_response += "No specific file management suggestions at this time.\n"
-                show_custom_messagebox(self, "AI Analysis Result (Simulated)", combined_ai_response, dialog_type="info")
-                self.status_bar.configure(text="AI Analysis Complete.")
-            else:
-                show_custom_messagebox(self, "AI Model Error", "AI Model could not be loaded (simulated). See console/logs for details.", dialog_type="error")
-                self.status_bar.configure(text="AI Model loading failed.")
-        except Exception as e:
-            logging.error(f"Error during AI System Analysis: {e}", exc_info=True)
-            show_custom_messagebox(self, "AI Analysis Error", f"An unexpected error occurred during AI analysis: {e}", dialog_type="error")
-            self.status_bar.configure(text="AI Analysis encountered an error.")
-
     def save_combined_report(self): 
         dialog = CTkFileDialog(
             master=self, 
@@ -878,4 +835,3 @@ if __name__ == "__main__":
         except Exception as critical_e: 
             print(f"CRITICAL FALLBACK ERROR (cannot show GUI messagebox): {critical_e}", file=sys.stderr)
             print(f"Original critical error: {e}", file=sys.stderr)
-```

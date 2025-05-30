@@ -6,7 +6,6 @@ System Sage is a Python application with a Graphical User Interface (GUI) design
 1.  **System Inventory:** Queries the Windows Registry for installed software, validates paths, and calculates disk usage.
 2.  **Developer Environment Audit (DevEnvAudit):** A powerful module that analyzes development tools, configurations, environment variables, and potential issues in your dev setup. Its results are displayed in detail within a dedicated GUI tab and included in combined system reports.
 3.  **Overclocker's Logbook (OCL):** Manages overclocking profiles and logs, leveraging a local SQLite database, with its own dedicated GUI tab.
-4.  **AI Core (Groundwork):** Foundational elements for future AI-powered system analysis and suggestions using Google's Gemma models.
 
 This project is primarily developed by Connor Lindsay (clindsay94) with Gemini AI assistance.
 
@@ -15,7 +14,7 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
 ## Core Features
 
 
-*   **Graphical User Interface (GUI):** System Sage now runs as a GUI application, built with **CustomTkinter** to provide a modern user experience. It offers a user-friendly way to initiate scans and view results in organized tabs for "System Inventory," "Developer Environment Audit," and "Overclocker's Logbook." Standard dialogs have been replaced with CustomTkinter equivalents for a consistent look and feel. A new "AI Insights" menu provides access to (currently simulated) AI analysis.
+*   **Graphical User Interface (GUI):** System Sage now runs as a GUI application, built with **CustomTkinter** to provide a modern user experience. It offers a user-friendly way to initiate scans and view results in organized tabs for "System Inventory," "Developer Environment Audit," and "Overclocker's Logbook." Standard dialogs have been replaced with CustomTkinter equivalents for a consistent look and feel.
 *   **Comprehensive Software Inventory:**
     *   Scans multiple registry hives for installed applications and components.
     *   Validates installation paths and calculates disk usage (toggleable).
@@ -30,13 +29,6 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
     *   Manages overclocking profiles (BIOS/UEFI settings, memory timings, CPU OC, etc.).
     *   View profile lists, details (settings & logs), create new (simplified) profiles, and add log entries.
     *   Data stored in a local SQLite database (`ocl_module_src/system_sage_olb.db`).
-*   **AI Integration Groundwork (Gemma LLM):**
-    *   Introduces the `system_sage/ai_core/` package, laying the foundation for future AI capabilities.
-    *   Includes placeholder modules:
-        *   `model_loader.py`: Simulates checking for local Gemma model availability and "loading" the model. It also contains a placeholder for analyzing broader system data.
-        *   `file_manager_ai.py`: Simulates providing AI-driven file management suggestions based on the software inventory.
-    *   The "AI Insights" menu in the GUI includes a "Run System Analysis with AI" option that triggers these simulated functions, showcasing the intended workflow.
-    *   The future goal is to leverage a local Gemma model to provide intelligent analysis of system data, offer optimization suggestions, and assist with tasks like file management.
 *   **Combined Reporting:**
     *   Generate comprehensive JSON and Markdown reports via the GUI ("File" > "Save Combined Report").
     *   Reports include full data from System Inventory and Developer Environment Audit scans.
@@ -57,7 +49,6 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
     *   The script `SystemSageV2.0.py` (or the latest version).
     *   The `devenvaudit_src/` directory and its contents.
     *   The `ocl_module_src/` directory and its contents.
-    *   The `system_sage/ai_core/` directory and its contents (including `model_files/gemma_model_files_exist.flag` for current AI simulation).
     *   Relevant JSON configuration files (defaults may apply if some are missing).
 
 2.  **Open a Command Prompt or PowerShell.**
@@ -74,9 +65,6 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
 *   **Running Scans:**
     *   Use the "Scan" menu to start "System Inventory Scan" or "Run DevEnv Audit."
     *   Scan progress updates in the status bar. Results populate the respective tabs.
-*   **AI Insights:**
-    *   Use the "AI Insights" menu and select "Run System Analysis with AI".
-    *   This currently uses placeholder functions to simulate model loading and analysis, providing example insights in a message box.
 *   **OCL Profiles:** Managed within the "Overclocker's Logbook" tab.
 *   **Saving Reports:** "File" > "Save Combined Report (JSON & MD)" saves System Inventory and DevEnvAudit data.
 
@@ -92,19 +80,13 @@ While System Sage is primarily GUI-driven, some CLI options can set initial defa
 
 ## Known Issues & Omissions (V2.0)
 
-*   **AI Functionality is Simulated:** The current AI integration uses placeholder functions. No actual Gemma model is loaded or used for analysis. The "AI Insights" feature demonstrates the intended workflow but provides hardcoded example responses.
 *   **DevEnvAudit HTML Report Formatting:** The planned refactor of `devenvaudit_src/report_generator.py` to improve HTML data serialization was not implemented.
 *   **OCL Data in Combined Reports:** Summaries of OCL profiles are NOT included in the main JSON/Markdown reports.
-*   **Unit Tests:** Comprehensive unit tests for OCL, DevEnvAudit integration, and AI Core modules are pending.
+*   **Unit Tests:** Comprehensive unit tests for OCL and DevEnvAudit integration are pending.
 *   **`README.txt` Outdated:** The old `README.txt` file is outdated. This `README.md` is the current primary documentation.
 
 ## Future Planned Features
 
-*   **Full AI Integration (Gemma LLM):**
-    *   Full integration of Gemma 3-12B-IT (or similar local model) for advanced system data analysis and interpretation.
-    *   AI-powered file management suggestions (identifying redundant files, optimizing storage, managing icons based on actual system scan data).
-    *   User interaction with AI insights through the GUI, allowing for feedback and refinement of suggestions.
-    *   AI-driven troubleshooting tips based on identified issues from DevEnvAudit or System Inventory.
 *   **OCL Enhancements:**
     *   Full implementation of "Save Current System Configuration as New OCL Profile" with actual system data capture.
     *   Full implementation of "Update Selected OCL Profile" with detailed editing capabilities.
@@ -116,6 +98,7 @@ While System Sage is primarily GUI-driven, some CLI options can set initial defa
     *   Advanced Filtering & Sorting in GUI (System Inventory).
     *   Configuration GUI for all settings.
 *   **General:**
+    *   - Potential Future AI Enhancements: Exploration of AI-driven analytical capabilities to further enhance system insights and user assistance.
     *   Refined CLI Mode with more comprehensive reporting options.
     *   Executable Bundling (e.g., using PyInstaller).
     *   Comprehensive Unit Test Coverage.
@@ -125,7 +108,6 @@ While System Sage is primarily GUI-driven, some CLI options can set initial defa
 This project is primarily developed by **Connor Lindsay (clindsay94)**.
 The `devenvaudit_src` modules are from the DevEnvAudit project.
 The `ocl_module_src` modules are from the Overclocker's Logbook project.
-The `system_sage.ai_core` package provides the foundation for AI integration.
 Significant AI assistance provided by Gemini (Google).
 
 ## License
