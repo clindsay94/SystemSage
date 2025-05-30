@@ -14,10 +14,8 @@ def get_all_profiles() -> List[Dict[str, Any]]:
 
     Returns:
         List[Dict[str, Any]]: A list of dictionaries, where each dictionary
-                              represents a profile summary (id, name, descriptio
-n, last_modified_date).
-                              Returns an empty list if no profiles exist or an e
-rror occurs.
+                              represents a profile summary (id, name, description, last_modified_date).
+                              Returns an empty list if no profiles exist or an error occurs.
     """
     try:
         return database.list_all_profiles()
@@ -27,22 +25,17 @@ rror occurs.
 
 def get_profile_details(profile_id: int) -> Optional[Dict[str, Any]]:
     """
-    Retrieves detailed information for a specific profile, including its setting
-s and logs.
+    Retrieves detailed information for a specific profile, including its settings and logs.
 
     Args:
         profile_id (int): The ID of the profile to retrieve.
 
     Returns:
-        Optional[Dict[str, Any]]: A dictionary containing the profile details (i
-d, name,
-                                  description, creation_date, last_modified_date
-),
-                                  along with 'settings' (list of setting dicts)
-and
+        Optional[Dict[str, Any]]: A dictionary containing the profile details (id, name,
+                                  description, creation_date, last_modified_date),
+                                  along with 'settings' (list of setting dicts) and
                                   'logs' (list of log dicts).
-                                  Returns None if the profile is not found or an
- error occurs.
+                                  Returns None if the profile is not found or an error occurs.
     """
     try:
         profile_data = database.get_profile(profile_id)
@@ -59,8 +52,7 @@ and
 
         return detailed_profile
     except Exception as e:
-        print(f"API Error in get_profile_details for profile_id {profile_id}: {e
-}")
+        print(f"API Error in get_profile_details for profile_id {profile_id}: {e}")
         return None
 
 def create_new_profile(
@@ -75,15 +67,12 @@ def create_new_profile(
     Args:
         name (str): The name for the new profile.
         description (Optional[str]): An optional description for the profile.
-        initial_settings (Optional[List[Dict[str, Any]]]): A list of settings to
- add.
-            Each setting dict should have 'category', 'setting_name', 'setting_v
-alue', 'value_type'.
+        initial_settings (Optional[List[Dict[str, Any]]]): A list of settings to add.
+            Each setting dict should have 'category', 'setting_name', 'setting_value', 'value_type'.
         initial_logs (Optional[List[str]]): A list of log text strings to add.
 
     Returns:
-        Optional[int]: The ID of the newly created profile, or None if creation
-fails.
+        Optional[int]: The ID of the newly created profile, or None if creation fails.
     """
     try:
         profile_id = database.create_profile(name, description)
@@ -101,19 +90,15 @@ fails.
                     setting['value_type']
                 )
                 if db_setting_id is None:
-                    print(f"API: Failed to add initial setting '{setting['settin
-g_name']}' for profile {profile_id}.")
-                    # Continue adding other settings/logs, or decide on stricter
- error handling
+                    print(f"API: Failed to add initial setting '{setting['setting_name']}' for profile {profile_id}.")
+                    # Continue adding other settings/logs, or decide on stricter error handling
 
         if initial_logs:
             for log_text in initial_logs:
                 db_log_id = database.add_log_entry(profile_id, log_text)
                 if db_log_id is None:
-                    print(f"API: Failed to add initial log for profile {profile_
-id}: '{log_text[:50]}...'.")
-                    # Continue adding other logs, or decide on stricter error ha
-ndling
+                    print(f"API: Failed to add initial log for profile {profile_id}: '{log_text[:50]}...'.")
+                    # Continue adding other logs, or decide on stricter error handling
 
         return profile_id
     except Exception as e:
@@ -136,20 +121,15 @@ def update_existing_profile(
         profile_id (int): The ID of the profile to update.
         name (Optional[str]): New name for the profile.
         description (Optional[str]): New description for the profile.
-        settings_to_add (Optional[List[Dict[str, Any]]]): List of settings to ad
-d.
-        settings_to_update (Optional[List[Dict[str, Any]]]): List of settings to
- update.
+        settings_to_add (Optional[List[Dict[str, Any]]]): List of settings to add.
+        settings_to_update (Optional[List[Dict[str, Any]]]): List of settings to update.
             Each dict should have 'id' (setting_id) and 'setting_value'.
-        setting_ids_to_delete (Optional[List[int]]): List of setting IDs to dele
-te.
+        setting_ids_to_delete (Optional[List[int]]): List of setting IDs to delete.
         logs_to_add (Optional[List[str]]): List of log text strings to add.
 
     Returns:
-        bool: True if any update operation was attempted (even if some sub-opera
-tions fail),
-              False if the profile doesn't exist or no update parameters were pr
-ovided.
+        bool: True if any update operation was attempted (even if some sub-operations fail),
+              False if the profile doesn't exist or no update parameters were provided.
     """
     attempted_any_update = False
     try:
@@ -159,8 +139,7 @@ ovided.
 
         if name is not None or description is not None:
             database.update_profile(profile_id, name, description)
-            attempted_any_update = True # update_profile itself returns bool, bu
-t we track attempt
+            attempted_any_update = True # update_profile itself returns bool, but we track attempt
 
         if settings_to_add:
             attempted_any_update = True
@@ -176,8 +155,7 @@ t we track attempt
         if settings_to_update:
             attempted_any_update = True
             for setting_update in settings_to_update:
-                database.update_setting_value(setting_update['id'], setting_upda
-te['setting_value'])
+                database.update_setting_value(setting_update['id'], setting_update['setting_value'])
 
         if setting_ids_to_delete:
             attempted_any_update = True
@@ -191,14 +169,10 @@ te['setting_value'])
 
         return attempted_any_update
     except Exception as e:
-        print(f"API Error in update_existing_profile for profile_id {profile_id}
-: {e}")
-        # If an error occurs during one of the operations, we might still have a
-ttempted updates.
-        # Depending on desired behavior, could return False here or rely on atte
-mpted_any_update.
-        return attempted_any_update # Or False if strict success for all parts i
-s needed
+        print(f"API Error in update_existing_profile for profile_id {profile_id}: {e}")
+        # If an error occurs during one of the operations, we might still have attempted updates.
+        # Depending on desired behavior, could return False here or rely on attempted_any_update.
+        return attempted_any_update # Or False if strict success for all parts is needed
 
 def delete_profile_by_id(profile_id: int) -> bool:
     """
@@ -213,8 +187,7 @@ def delete_profile_by_id(profile_id: int) -> bool:
     try:
         return database.delete_profile(profile_id)
     except Exception as e:
-        print(f"API Error in delete_profile_by_id for profile_id {profile_id}: {
-e}")
+        print(f"API Error in delete_profile_by_id for profile_id {profile_id}: {e}")
         return False
 
 def add_log_to_profile(profile_id: int, log_text: str) -> Optional[int]:
@@ -226,24 +199,20 @@ def add_log_to_profile(profile_id: int, log_text: str) -> Optional[int]:
         log_text (str): The text content of the log entry.
 
     Returns:
-        Optional[int]: The ID of the newly created log entry, or None if it fail
-s.
+        Optional[int]: The ID of the newly created log entry, or None if it fails.
     """
     try:
         if database.get_profile(profile_id) is None: # Check if profile exists
-            print(f"API: Profile with ID {profile_id} not found for adding log."
-)
+            print(f"API: Profile with ID {profile_id} not found for adding log.")
             return None
         log_id = database.add_log_entry(profile_id, log_text)
         return log_id
     except Exception as e:
-        print(f"API Error in add_log_to_profile for profile_id {profile_id}: {e}
-")
+        print(f"API Error in add_log_to_profile for profile_id {profile_id}: {e}")
         return None
 
 if __name__ == '__main__':
-    # Example usage (requires database.py and system_sage_olb.db to be initializ
-ed)
+    # Example usage (requires database.py and system_sage_olb.db to be initialized)
     print("Running OLB API examples...")
 
     # Ensure DB is clean for a fresh run of examples (optional)
@@ -259,21 +228,17 @@ ed)
 
     print("\n--- Testing create_new_profile ---")
     profile1_settings = [
-        {'category': 'CPU', 'setting_name': 'CoreVoltage', 'setting_value': '1.2
-5', 'value_type': 'float'},
-        {'category': 'Memory', 'setting_name': 'Frequency', 'setting_value': '60
-00', 'value_type': 'int'}
+        {'category': 'CPU', 'setting_name': 'CoreVoltage', 'setting_value': '1.25', 'value_type': 'float'},
+        {'category': 'Memory', 'setting_name': 'Frequency', 'setting_value': '6000', 'value_type': 'int'}
     ]
     profile1_logs = ["Initial stability test passed.", "Increased PBO limits."]
-    new_profile_id1 = create_new_profile("My Awesome OC", "Daily driver overcloc
-k for Ryzen 9", profile1_settings, profile1_logs)
+    new_profile_id1 = create_new_profile("My Awesome OC", "Daily driver overclock for Ryzen 9", profile1_settings, profile1_logs)
     if new_profile_id1:
         print(f"Created profile ID: {new_profile_id1}")
     else:
         print("Failed to create profile 1.")
 
-    new_profile_id2 = create_new_profile("Gaming Profile", "Max performance for
-gaming", initial_logs=["Baseline test."])
+    new_profile_id2 = create_new_profile("Gaming Profile", "Max performance for gaming", initial_logs=["Baseline test."])
     if new_profile_id2:
         print(f"Created profile ID: {new_profile_id2}")
     else:
@@ -293,8 +258,7 @@ gaming", initial_logs=["Baseline test."])
             print(f"  Description: {details.get('description')}")
             print(f"  Settings: {len(details.get('settings', []))} items")
             for setting in details.get('settings', []):
-                print(f"    - {setting.get('category')}/{setting.get('setting_na
-me')}: {setting.get('setting_value')}")
+                print(f"    - {setting.get('category')}/{setting.get('setting_name')}: {setting.get('setting_value')}")
             print(f"  Logs: {len(details.get('logs', []))} items")
             for log in details.get('logs', []):
                 print(f"    - [{log.get('timestamp')}]: {log.get('log_text')}")
@@ -302,30 +266,23 @@ me')}: {setting.get('setting_value')}")
             print(f"Could not get details for profile {new_profile_id1}")
 
     if new_profile_id1:
-        print(f"\n--- Testing update_existing_profile for ID {new_profile_id1} -
---")
+        print(f"\n--- Testing update_existing_profile for ID {new_profile_id1} ---")
         profile1_settings_to_add = [
-            {'category': 'FanControl', 'setting_name': 'CPU_Fan_Curve', 'setting
-_value': 'Aggressive', 'value_type': 'str'}
+            {'category': 'FanControl', 'setting_name': 'CPU_Fan_Curve', 'setting_value': 'Aggressive', 'value_type': 'str'}
         ]
-        # Assuming the first setting for profile 1 was CPU CoreVoltage with ID 1
- (if DB is fresh)
+        # Assuming the first setting for profile 1 was CPU CoreVoltage with ID 1 (if DB is fresh)
         # This requires knowing the setting ID, which is dynamic.
         # For a robust test, we'd fetch settings first to get an ID.
         # For this example, let's assume we know a setting ID if one exists.
         profile1_details_before_update = get_profile_details(new_profile_id1)
         setting_to_update_id = None
-        if profile1_details_before_update and profile1_details_before_update['se
-ttings']:
-            setting_to_update_id = profile1_details_before_update['settings'][0]
-['id'] # Get ID of first setting
+        if profile1_details_before_update and profile1_details_before_update['settings']:
+            setting_to_update_id = profile1_details_before_update['settings'][0]['id'] # Get ID of first setting
 
         profile1_settings_to_update = []
         if setting_to_update_id:
-            profile1_settings_to_update.append({'id': setting_to_update_id, 'set
-ting_value': '1.28'}) # Update CoreVoltage
-            print(f"Attempting to update setting ID {setting_to_update_id} to 1.
-28")
+            profile1_settings_to_update.append({'id': setting_to_update_id, 'setting_value': '1.28'}) # Update CoreVoltage
+            print(f"Attempting to update setting ID {setting_to_update_id} to 1.28")
 
         update_success = update_existing_profile(
             new_profile_id1,
@@ -334,20 +291,16 @@ ting_value': '1.28'}) # Update CoreVoltage
             settings_to_update=profile1_settings_to_update,
             logs_to_add=["Performed BIOS update, re-applied settings."]
         )
-        print(f"Update attempted for profile {new_profile_id1}: {update_success}
-")
+        print(f"Update attempted for profile {new_profile_id1}: {update_success}")
 
-        print(f"\n--- Testing get_profile_details for ID {new_profile_id1} (afte
-r update) ---")
+        print(f"\n--- Testing get_profile_details for ID {new_profile_id1} (after update) ---")
         details_after_update = get_profile_details(new_profile_id1)
         if details_after_update:
             print(f"Details for profile {new_profile_id1} after update:")
             print(f"  Name: {details_after_update.get('name')}")
-            print(f"  Settings: {len(details_after_update.get('settings', []))}
-items")
+            print(f"  Settings: {len(details_after_update.get('settings', []))} items")
             for setting in details_after_update.get('settings', []):
-                print(f"    - {setting.get('category')}/{setting.get('setting_na
-me')}: {setting.get('setting_value')}")
+                print(f"    - {setting.get('category')}/{setting.get('setting_name')}: {setting.get('setting_value')}")
             print(f"  Logs: {len(details_after_update.get('logs', []))} items")
             for log in details_after_update.get('logs', []):
                 print(f"    - [{log.get('timestamp')}]: {log.get('log_text')}")
@@ -355,43 +308,34 @@ me')}: {setting.get('setting_value')}")
 
     if new_profile_id2:
         print(f"\n--- Testing add_log_to_profile for ID {new_profile_id2} ---")
-        log_id = add_log_to_profile(new_profile_id2, "Ran FurMark stress test -
-stable.")
+        log_id = add_log_to_profile(new_profile_id2, "Ran FurMark stress test - stable.")
         if log_id:
             print(f"Added log with ID {log_id} to profile {new_profile_id2}")
             details_after_log = get_profile_details(new_profile_id2)
             if details_after_log:
-                 print(f"  Logs now: {len(details_after_log.get('logs', []))} it
-ems")
+                 print(f"  Logs now: {len(details_after_log.get('logs', []))} items")
         else:
             print(f"Failed to add log to profile {new_profile_id2}")
 
     if new_profile_id1:
-        print(f"\n--- Testing delete_profile_by_id for ID {new_profile_id1} ---"
-)
+        print(f"\n--- Testing delete_profile_by_id for ID {new_profile_id1} ---")
         delete_success = delete_profile_by_id(new_profile_id1)
-        print(f"Deletion of profile {new_profile_id1} successful: {delete_succes
-s}")
+        print(f"Deletion of profile {new_profile_id1} successful: {delete_success}")
 
     print("\n--- Testing get_all_profiles (after actions) ---")
     profiles_after_actions = get_all_profiles()
     print(f"Profiles after actions: {profiles_after_actions}")
 
     # Test deleting a setting from the remaining profile (if any)
-    if new_profile_id2 and get_profile_details(new_profile_id2): # Check if prof
-ile still exists
+    if new_profile_id2 and get_profile_details(new_profile_id2): # Check if profile still exists
         profile2_details = get_profile_details(new_profile_id2)
         if profile2_details and profile2_details['settings']:
             setting_to_delete_id = profile2_details['settings'][0]['id']
-            print(f"\n--- Testing deleting setting ID {setting_to_delete_id} fro
-m profile ID {new_profile_id2} ---")
-            update_success = update_existing_profile(new_profile_id2, setting_id
-s_to_delete=[setting_to_delete_id])
-            print(f"Update (delete setting) for profile {new_profile_id2} attemp
-ted: {update_success}")
+            print(f"\n--- Testing deleting setting ID {setting_to_delete_id} from profile ID {new_profile_id2} ---")
+            update_success = update_existing_profile(new_profile_id2, setting_ids_to_delete=[setting_to_delete_id])
+            print(f"Update (delete setting) for profile {new_profile_id2} attempted: {update_success}")
             details_after_setting_delete = get_profile_details(new_profile_id2)
             if details_after_setting_delete:
-                print(f"  Settings now: {len(details_after_setting_delete.get('s
-ettings', []))} items")
+                print(f"  Settings now: {len(details_after_setting_delete.get('settings', []))} items")
 
     print("\nOLB API examples finished.")
