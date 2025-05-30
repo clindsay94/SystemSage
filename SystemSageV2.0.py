@@ -17,6 +17,7 @@
 # - Added custom theme and font setup.
 # - Refined widget styling and layout.
 
+
 import os
 import platform
 import json
@@ -35,6 +36,7 @@ from CTkFileDialog import CTkFileDialog # Import CTkFileDialog
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
+
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(os.path.dirname(__file__))
@@ -127,6 +129,8 @@ def load_json_config(filename, default_data):
         logging.warning(f"Unexpected error loading {filename}: {e}. Using default values.")
     return default_data
 
+
+
 DEFAULT_CALCULATE_DISK_USAGE = True
 DEFAULT_OUTPUT_JSON = True 
 DEFAULT_OUTPUT_MARKDOWN = True
@@ -144,15 +148,18 @@ class DirectorySizeError(Exception): pass
 def is_likely_component(display_name, publisher):
     if not IS_WINDOWS: return False
     name_lower = str(display_name).lower(); publisher_lower = str(publisher).lower()
+
     for keyword in COMPONENT_KEYWORDS:
         if keyword in name_lower or keyword in publisher_lower: return True
     if name_lower.startswith('{') or name_lower.startswith('kb'): return True
     return False
+
 def get_hkey_name(hkey_root):
     if not IS_WINDOWS: return "N/A"
     if hkey_root == winreg.HKEY_LOCAL_MACHINE: return "HKEY_LOCAL_MACHINE"
     if hkey_root == winreg.HKEY_CURRENT_USER: return "HKEY_CURRENT_USER"
     return str(hkey_root)
+
 def get_directory_size(directory_path, calculate_disk_usage_flag):
     total_size = 0
     if not calculate_disk_usage_flag: return 0
@@ -165,6 +172,7 @@ def get_directory_size(directory_path, calculate_disk_usage_flag):
                     except OSError: pass 
     except OSError as e: raise DirectorySizeError(f"Error accessing directory {directory_path}: {e}") from e
     return total_size
+
 def format_size(size_bytes, calculate_disk_usage_flag):
     if not calculate_disk_usage_flag and size_bytes == 0: return "Not Calculated"
     if size_bytes < 0: return "N/A (Error)"
@@ -172,15 +180,18 @@ def format_size(size_bytes, calculate_disk_usage_flag):
     size_name = ("B", "KB", "MB", "GB", "TB"); i = 0
     while size_bytes >= 1024 and i < len(size_name)-1 : size_bytes /= 1024.0; i += 1
     return f"{size_bytes:.2f} {size_name[i]}"
+
 def get_installed_software(calculate_disk_usage_flag):
     if not IS_WINDOWS:
         logging.info("System Inventory (registry scan) is skipped as it's only available on Windows.")
         return [{'DisplayName': "System Inventory", 'Remarks': "System Inventory (via registry scan) is only available on Windows.", 'Category': "Informational"}]
+
     software_list = []; processed_entries = set()
     registry_paths = [
         (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM (64-bit)"),
         (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM (32-bit)"),
         (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKCU")]
+
     for hkey_root, path_suffix, hive_display_name in registry_paths:
         try:
             with winreg.OpenKey(hkey_root, path_suffix) as uninstall_key:
@@ -274,7 +285,6 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
             else: f.write("*No data collected by Developer Environment Audit.*\n\n")
         logging.info(f"Combined Markdown report successfully saved to {full_path}")
     except Exception as e: logging.error(f"Error saving combined Markdown file: {e}", exc_info=True); raise
-
 class SystemSageApp(customtkinter.CTk):
     def __init__(self, cli_args=None):
         super().__init__()
@@ -305,10 +315,9 @@ class SystemSageApp(customtkinter.CTk):
         self.button_font = ("Roboto", 12, "bold")
         self.title_font = ("Roboto", 14, "bold") # Font for section titles
         self.option_add("*Font", self.default_font)
-
         self.title("System Sage V2.0") 
         self.geometry("1200x850")
-        
+       
         self.inventory_scan_button = None
         self.devenv_audit_button = None
         self.ai_analysis_button = None
@@ -319,13 +328,13 @@ class SystemSageApp(customtkinter.CTk):
         self.devenv_issues_table = None 
         self.ocl_profiles_table = None 
         self.selected_ocl_profile_id = None 
-        
+       
         self.scan_in_progress = False
         self.system_inventory_results = []
         self.devenv_components_results = []
         self.devenv_env_vars_results = []
         self.devenv_issues_results = []
-        
+       
         self.ocl_profile_details_text = None
         self.ocl_refresh_button = None
         self.ocl_save_new_button = None
@@ -789,6 +798,7 @@ class SystemSageApp(customtkinter.CTk):
             md_include_components = self.cli_args.markdown_include_components_flag if self.cli_args else DEFAULT_MARKDOWN_INCLUDE_COMPONENTS
             sys_inv_data_for_report = self.system_inventory_results
             is_sys_inv_placeholder = (self.system_inventory_results and len(self.system_inventory_results) == 1 and self.system_inventory_results[0].get('Category') == "Informational")
+
             if is_sys_inv_placeholder and (self.devenv_components_results or self.devenv_env_vars_results or self.devenv_issues_results): sys_inv_data_for_report = [] 
             elif is_sys_inv_placeholder: pass 
             output_to_json_combined(sys_inv_data_for_report, self.devenv_components_results, self.devenv_env_vars_results, self.devenv_issues_results, output_dir)
@@ -844,6 +854,7 @@ if __name__ == "__main__":
         ocl_db_path = resource_path(os.path.join("ocl_module_src", "system_sage_olb.db"))
         os.makedirs(os.path.dirname(ocl_db_path), exist_ok=True) 
         logging.info(f"OCL DB expected at: {ocl_db_path} (actual path handled by ocl_module)")
+
     except Exception as e: logging.error(f"Error preparing OCL DB path: {e}", exc_info=True)
     
     try:
@@ -851,11 +862,12 @@ if __name__ == "__main__":
         app.mainloop()
     except Exception as e:
         logging.critical("GUI Crashed: %s", e, exc_info=True)
+
         if "customtkinter" in str(e).lower() or "ctk" in str(e).lower() or "tkinter" in str(e).lower() : 
             error_msg = f"A critical UI error occurred: {e}\nEnsure CustomTkinter and Tkinter are correctly installed and your system supports it (e.g., X11 for Linux). See logs for details."
         else:
             error_msg = f"A critical error occurred: {e}\nSee logs for details."
-        
+      
         try:
             # Attempt to show a Tkinter based messagebox if CustomTkinter itself failed.
             # This is a last resort if the main app's CTk instance is too broken.
