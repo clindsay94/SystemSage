@@ -1,0 +1,9 @@
+# Core Dependencies for System Sage
+customtkinter>=0.4.0  # Used for the modern GUI elements
+CTkTable>=0.1.0       # Required for displaying tabular data in the GUI
+
+# Optional/Recommended Dependencies
+# The 'packaging' library provides robust version parsing and comparison,
+# which can be useful for accurate update checks in the DevEnvAudit module.
+# While DevEnvAudit has a fallback if it's not installed, installing it is recommended.
+packaging>=21.3
