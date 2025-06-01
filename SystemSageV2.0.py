@@ -145,63 +145,11 @@ COMPONENT_KEYWORDS = load_json_config(COMPONENT_KEYWORDS_FILE, DEFAULT_COMPONENT
 LAUNCHER_HINTS = load_json_config(LAUNCHER_HINTS_FILE, DEFAULT_LAUNCHER_HINTS)
 
 # --- Logging Configuration ---
-class SystemSageApp(customtkinter.CTk):
-    def __init__(self, cli_args=None):
-        super().__init__()
-        self.cli_args = cli_args
-        customtkinter.set_appearance_mode("System")
-
-        # --- Theme and Styling Constants ---
-        self.corner_radius_std = 6
-        self.corner_radius_soft = 8
-        self.padding_std = 5
-        self.padding_large = 10
-        self.button_hover_color = "gray70" # Example, may need adjustment based on theme
-        # self.action_button_fg_color = "default" # Or a specific color if needed
-
-        theme_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "custom_theme.json")
-        if os.path.exists(theme_path):
-            try:
-                customtkinter.set_default_color_theme(theme_path)
-                logging.info(f"Loaded custom theme from {theme_path}")
-            except Exception as e:
-                logging.error(f"Failed to load custom theme from {theme_path}: {e}. Using default dark-blue theme.")
-                customtkinter.set_default_color_theme("dark-blue") # Fallback
-        else:
-            customtkinter.set_default_color_theme("dark-blue") # Fallback
-            logging.warning(f"Custom theme file not found at {theme_path}. Using default dark-blue theme.")
-
-        self.default_font = ("Roboto", 12)
-        self.button_font = ("Roboto", 12, "bold")
-        self.title_font = ("Roboto", 14, "bold") # Font for section titles
-        self.option_add("*Font", self.default_font)
-        self.title("System Sage V2.0")
-        self.geometry("1200x850")
-
-        self.inventory_scan_button = None
-        self.devenv_audit_button = None
-
-        self.inventory_table = None
-        self.devenv_components_table = None
-        self.devenv_env_vars_table = None
-        self.devenv_issues_table = None
-        self.ocl_profiles_table = None
-        self.selected_ocl_profile_id = None
-
-        self.scan_in_progress = False
-        self.system_inventory_results = []
-        self.devenv_components_results = []
-        self.devenv_env_vars_results = []
-        self.devenv_issues_results = []
-
-        self.ocl_profile_details_text = None
-        self.ocl_refresh_button = None
-        self.ocl_save_new_button = None
-        self.ocl_update_selected_button = None
-
-        if cli_args:
-            # Handle command-line arguments
-            pass
+# Placeholder for initial class structure, actual implementation below
+# class SystemSageApp(customtkinter.CTk):
+#     def __init__(self, cli_args=None):
+#         super().__init__()
+#         # ... (initial attributes) ...
 
 class DirectorySizeError(Exception): pass
 def is_likely_component(display_name, publisher):
@@ -215,8 +163,8 @@ def is_likely_component(display_name, publisher):
 
 def get_hkey_name(hkey_root):
     if not IS_WINDOWS: return "N/A"
-    if hkey_root == winreg.HKEY_LOCAL_MACHINE: return "HKEY_LOCAL_MACHINE"
-    if hkey_root == winreg.HKEY_CURRENT_USER: return "HKEY_CURRENT_USER"
+    if hkey_root == winreg.HKEY_LOCAL_MACHINE: return "HKEY_LOCAL_MACHINE" # type: ignore
+    if hkey_root == winreg.HKEY_CURRENT_USER: return "HKEY_CURRENT_USER" # type: ignore
     return str(hkey_root)
 
 def get_directory_size(directory_path, calculate_disk_usage_flag):
@@ -247,36 +195,36 @@ def get_installed_software(calculate_disk_usage_flag):
 
     software_list = []; processed_entries = set()
     registry_paths = [
-        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM (64-bit)"),
-        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM (32-bit)"),
-        (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKCU")]
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM (64-bit)"), # type: ignore
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM (32-bit)"), # type: ignore
+        (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKCU")] # type: ignore
 
     for hkey_root, path_suffix, hive_display_name in registry_paths:
         try:
-            with winreg.OpenKey(hkey_root, path_suffix) as uninstall_key:
-                for i in range(winreg.QueryInfoKey(uninstall_key)[0]):
+            with winreg.OpenKey(hkey_root, path_suffix) as uninstall_key: # type: ignore
+                for i in range(winreg.QueryInfoKey(uninstall_key)[0]): # type: ignore
                     subkey_name = ""; app_details = {}; full_reg_key_path = "N/A"
                     try:
-                        subkey_name = winreg.EnumKey(uninstall_key, i)
+                        subkey_name = winreg.EnumKey(uninstall_key, i) # type: ignore
                         full_reg_key_path = f"{get_hkey_name(hkey_root)}\\{path_suffix}\\{subkey_name}"
-                        with winreg.OpenKey(uninstall_key, subkey_name) as app_key:
+                        with winreg.OpenKey(uninstall_key, subkey_name) as app_key: # type: ignore
                             app_details = {'SourceHive': hive_display_name, 'RegistryKeyPath': full_reg_key_path, 'InstallLocationSize': "N/A" if calculate_disk_usage_flag else "Not Calculated", 'Remarks': ""}
-                            try: app_details['DisplayName'] = str(winreg.QueryValueEx(app_key, "DisplayName")[0])
+                            try: app_details['DisplayName'] = str(winreg.QueryValueEx(app_key, "DisplayName")[0]) # type: ignore
                             except FileNotFoundError: app_details['DisplayName'] = subkey_name
                             except OSError as e: app_details['DisplayName'] = f"{subkey_name} (Name Error: {e.strerror})"
                             entry_id_name = app_details['DisplayName']; entry_id_version = "N/A"
-                            try: app_details['DisplayVersion'] = str(winreg.QueryValueEx(app_key, "DisplayVersion")[0]); entry_id_version = app_details['DisplayVersion']
+                            try: app_details['DisplayVersion'] = str(winreg.QueryValueEx(app_key, "DisplayVersion")[0]); entry_id_version = app_details['DisplayVersion'] # type: ignore
                             except FileNotFoundError: app_details['DisplayVersion'] = "N/A"
                             except OSError as e: app_details['DisplayVersion'] = f"Version Error: {e.strerror}"
                             entry_id = (entry_id_name, entry_id_version)
                             if entry_id in processed_entries: continue
                             processed_entries.add(entry_id)
-                            try: app_details['Publisher'] = str(winreg.QueryValueEx(app_key, "Publisher")[0])
+                            try: app_details['Publisher'] = str(winreg.QueryValueEx(app_key, "Publisher")[0]) # type: ignore
                             except FileNotFoundError: app_details['Publisher'] = "N/A"
                             except OSError as e: app_details['Publisher'] = f"Publisher Error: {e.strerror}"
                             app_details['Category'] = "Component/Driver" if is_likely_component(app_details['DisplayName'], app_details['Publisher']) else "Application"
                             try:
-                                install_location_raw = winreg.QueryValueEx(app_key, "InstallLocation")[0]; install_location_cleaned = str(install_location_raw)
+                                install_location_raw = winreg.QueryValueEx(app_key, "InstallLocation")[0]; install_location_cleaned = str(install_location_raw) # type: ignore
                                 if isinstance(install_location_raw, str):
                                     temp_location = install_location_raw.strip()
                                     if (temp_location.startswith('"') and temp_location.endswith('"')) or (temp_location.startswith("'") and temp_location.endswith("'")): install_location_cleaned = temp_location[1:-1]
@@ -762,6 +710,9 @@ class SystemSageApp(customtkinter.CTk):
     def on_ocl_profile_select_ctktable(self, selection_data):
         selected_row_index = selection_data.get('row')
         if selected_row_index is None: return
+        if self.ocl_profiles_table is None:
+            logging.error("on_ocl_profile_select_ctktable called but self.ocl_profiles_table is None.")
+            return
         try:
             if selected_row_index + 1 >= len(self.ocl_profiles_table.values): logging.warning(f"Selected row index {selected_row_index} is out of bounds."); return
             profile_id_val_str = self.ocl_profiles_table.values[selected_row_index + 1][0]
