@@ -1,5 +1,4 @@
-# Placeholder for core profile data structures (Python-based) for the Overclocke
-r's Logbook Module.
+# Placeholder for core profile data structures (Python-based) for the Overclocker's Logbook Module.
 class Profile:
     def __init__(self, id, name, type, settings, notes=None):
         self.id = id
