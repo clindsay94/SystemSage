@@ -229,8 +229,7 @@
       "name": ".NET SDK/Runtime/Framework",
       "executables": ["dotnet.exe"],
       "publisher": "Microsoft Corporation",
-      "keywords": [".NET SDK", ".NET Runtime", "ASP.NET Core", "Windows Desktop
-Runtime", "Microsoft .NET Runtime"]
+      "keywords": [".NET SDK", ".NET Runtime", "ASP.NET Core", "Windows Desktop Runtime", "Microsoft .NET Runtime"]
     },
     {
       "name": "Tkinter (Python GUI)",
@@ -782,8 +781,7 @@ Runtime", "Microsoft .NET Runtime"]
     },
     {
       "name": "NVIDIA App / NVIDIA Control Panel / GeForce Experience",
-      "executables": ["nvidia-settings.exe", "nvapp.exe", "nvcplui.exe", "NVIDIA
- GeForce Experience.exe"],
+      "executables": ["nvidia-settings.exe", "nvapp.exe", "nvcplui.exe", "NVIDIA GeForce Experience.exe"],
       "publisher": "NVIDIA Corporation",
       "keywords": ["NVIDIA", "GeForce Experience", "NVIDIA Control Panel"]
     },
@@ -1167,8 +1165,7 @@ Runtime", "Microsoft .NET Runtime"]
       "name": "Minecraft (Java Edition)",
       "executables": ["javaw.exe"],
       "publisher": "Mojang Studios (Microsoft)",
-      "notes": "Launched via Launcher, involves javaw.exe with specific argument
-s",
+      "notes": "Launched via Launcher, involves javaw.exe with specific arguments",
       "keywords": ["Minecraft Java"]
     },
     {
@@ -1323,8 +1320,7 @@ s",
       "name": "NVIDIA Driver Components",
       "executables": [],
       "publisher": "NVIDIA Corporation",
-      "notes": "Various system drivers & components like HD Audio Driver, FrameV
-iew SDK"
+      "notes": "Various system drivers & components like HD Audio Driver, FrameView SDK"
     },
     {
       "name": "PlayStation(R) PC SDK Runtime",
@@ -1354,14 +1350,12 @@ iew SDK"
       "name": "Windows SDK Components (various)",
       "executables": [],
       "publisher": "Microsoft Corporation",
-      "notes": "Includes ARM Additions, CRT components, DirectX components, Sign
-ing Tools, etc."
+      "notes": "Includes ARM Additions, CRT components, DirectX components, Signing Tools, etc."
     },
     {
       "name": "Windows Driver Packages (various)",
       "executables": [],
-      "notes": "System Drivers, e.g., Chimera SmartCard, Google WinUSB, Microsof
-t USBCCID, SAMSUNG various"
+      "notes": "System Drivers, e.g., Chimera SmartCard, Google WinUSB, Microsoft USBCCID, SAMSUNG various"
     },
     {
       "name": "WinRT Intellisense Components",

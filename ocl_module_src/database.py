@@ -71,7 +71,7 @@ def _update_profile_last_modified(conn, profile_id: int):
         print(f"Error updating profile last_modified_date for profile_id {profile_id}: {e}")
         # Potentially re-raise or handle as appropriate
 
-def create_profile(name: str, description: str = None) -> int | None:
+def create_profile(name: str, description: str | None = None) -> int | None:
     """Inserts a new profile. Returns new profile ID or None on error."""
     now_iso = datetime.now().isoformat()
     try:
@@ -111,7 +111,7 @@ def list_all_profiles() -> list[dict]:
         print(f"Error listing profiles: {e}")
         return []
 
-def update_profile(profile_id: int, name: str = None, description: str = None) -> bool:
+def update_profile(profile_id: int, name: str | None = None, description: str | None = None) -> bool:
     """Updates name and/or description. Updates last_modified_date. Returns True on success."""
     if name is None and description is None:
         return False # Nothing to update

@@ -16,6 +16,7 @@
 # - Replaced filedialog.askdirectory with CTkFileDialog.
 # - Added custom theme and font setup.
 # - Refined widget styling and layout.
+# - Added a fallback mechanism to display a `tkinter` messagebox in case of critical UI errors with CustomTkinter.
 
 
 import os
@@ -29,15 +30,18 @@ from threading import Thread
 import traceback
 import sys
 import customtkinter
-from CTkTable import CTkTable
-from CTkFileDialog import CTkFileDialog # Import CTkFileDialog
+from customtkinter import CTkTable # type: ignore # Import CTkTable for table widgets
+from customtkinter import CTkFileDialog # type: ignore # Import CTkFileDialog
+from customtkinter import CTkMessagebox  # type: ignore # Import CTkMessagebox
+
+
 
 # --- Helper function for PyInstaller resource path ---
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
 
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS # type: ignore
     except Exception:
         base_path = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(base_path, relative_path)
@@ -140,6 +144,13 @@ LAUNCHER_HINTS_FILE = resource_path("systemsage_launcher_hints.json")
 COMPONENT_KEYWORDS = load_json_config(COMPONENT_KEYWORDS_FILE, DEFAULT_COMPONENT_KEYWORDS)
 LAUNCHER_HINTS = load_json_config(LAUNCHER_HINTS_FILE, DEFAULT_LAUNCHER_HINTS)
 
+# --- Logging Configuration ---
+# Placeholder for initial class structure, actual implementation below
+# class SystemSageApp(customtkinter.CTk):
+#     def __init__(self, cli_args=None):
+#         super().__init__()
+#         # ... (initial attributes) ...
+
 class DirectorySizeError(Exception): pass
 def is_likely_component(display_name, publisher):
     if not IS_WINDOWS: return False
@@ -152,8 +163,8 @@ def is_likely_component(display_name, publisher):
 
 def get_hkey_name(hkey_root):
     if not IS_WINDOWS: return "N/A"
-    if hkey_root == winreg.HKEY_LOCAL_MACHINE: return "HKEY_LOCAL_MACHINE"
-    if hkey_root == winreg.HKEY_CURRENT_USER: return "HKEY_CURRENT_USER"
+    if hkey_root == winreg.HKEY_LOCAL_MACHINE: return "HKEY_LOCAL_MACHINE" # type: ignore
+    if hkey_root == winreg.HKEY_CURRENT_USER: return "HKEY_CURRENT_USER" # type: ignore
     return str(hkey_root)
 
 def get_directory_size(directory_path, calculate_disk_usage_flag):
@@ -184,36 +195,36 @@ def get_installed_software(calculate_disk_usage_flag):
 
     software_list = []; processed_entries = set()
     registry_paths = [
-        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM (64-bit)"),
-        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM (32-bit)"),
-        (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKCU")]
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM (64-bit)"), # type: ignore
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", "HKLM (32-bit)"), # type: ignore
+        (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "HKCU")] # type: ignore
 
     for hkey_root, path_suffix, hive_display_name in registry_paths:
         try:
-            with winreg.OpenKey(hkey_root, path_suffix) as uninstall_key:
-                for i in range(winreg.QueryInfoKey(uninstall_key)[0]):
+            with winreg.OpenKey(hkey_root, path_suffix) as uninstall_key: # type: ignore
+                for i in range(winreg.QueryInfoKey(uninstall_key)[0]): # type: ignore
                     subkey_name = ""; app_details = {}; full_reg_key_path = "N/A"
                     try:
-                        subkey_name = winreg.EnumKey(uninstall_key, i)
+                        subkey_name = winreg.EnumKey(uninstall_key, i) # type: ignore
                         full_reg_key_path = f"{get_hkey_name(hkey_root)}\\{path_suffix}\\{subkey_name}"
-                        with winreg.OpenKey(uninstall_key, subkey_name) as app_key:
+                        with winreg.OpenKey(uninstall_key, subkey_name) as app_key: # type: ignore
                             app_details = {'SourceHive': hive_display_name, 'RegistryKeyPath': full_reg_key_path, 'InstallLocationSize': "N/A" if calculate_disk_usage_flag else "Not Calculated", 'Remarks': ""}
-                            try: app_details['DisplayName'] = str(winreg.QueryValueEx(app_key, "DisplayName")[0])
+                            try: app_details['DisplayName'] = str(winreg.QueryValueEx(app_key, "DisplayName")[0]) # type: ignore
                             except FileNotFoundError: app_details['DisplayName'] = subkey_name
                             except OSError as e: app_details['DisplayName'] = f"{subkey_name} (Name Error: {e.strerror})"
                             entry_id_name = app_details['DisplayName']; entry_id_version = "N/A"
-                            try: app_details['DisplayVersion'] = str(winreg.QueryValueEx(app_key, "DisplayVersion")[0]); entry_id_version = app_details['DisplayVersion']
+                            try: app_details['DisplayVersion'] = str(winreg.QueryValueEx(app_key, "DisplayVersion")[0]); entry_id_version = app_details['DisplayVersion'] # type: ignore
                             except FileNotFoundError: app_details['DisplayVersion'] = "N/A"
                             except OSError as e: app_details['DisplayVersion'] = f"Version Error: {e.strerror}"
                             entry_id = (entry_id_name, entry_id_version)
                             if entry_id in processed_entries: continue
                             processed_entries.add(entry_id)
-                            try: app_details['Publisher'] = str(winreg.QueryValueEx(app_key, "Publisher")[0])
+                            try: app_details['Publisher'] = str(winreg.QueryValueEx(app_key, "Publisher")[0]) # type: ignore
                             except FileNotFoundError: app_details['Publisher'] = "N/A"
                             except OSError as e: app_details['Publisher'] = f"Publisher Error: {e.strerror}"
                             app_details['Category'] = "Component/Driver" if is_likely_component(app_details['DisplayName'], app_details['Publisher']) else "Application"
                             try:
-                                install_location_raw = winreg.QueryValueEx(app_key, "InstallLocation")[0]; install_location_cleaned = str(install_location_raw)
+                                install_location_raw = winreg.QueryValueEx(app_key, "InstallLocation")[0]; install_location_cleaned = str(install_location_raw) # type: ignore
                                 if isinstance(install_location_raw, str):
                                     temp_location = install_location_raw.strip()
                                     if (temp_location.startswith('"') and temp_location.endswith('"')) or (temp_location.startswith("'") and temp_location.endswith("'")): install_location_cleaned = temp_location[1:-1]
@@ -238,7 +249,7 @@ def get_installed_software(calculate_disk_usage_flag):
         except FileNotFoundError: logging.info(f"Registry path not found (this might be normal): {hive_display_name} - {path_suffix}")
         except Exception as e_outer: logging.error(f"An error occurred accessing registry path {hive_display_name} - {path_suffix}: {e_outer}", exc_info=True)
     return sorted(software_list, key=lambda x: str(x.get('DisplayName','')).lower())
-def output_to_json_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.json", ocl_summary_data=None):
+def output_to_json_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.json"):
     combined_data = {}
     is_sys_inv_placeholder = system_inventory_data and len(system_inventory_data) == 1 and system_inventory_data[0].get('Category') == "Informational"
     if system_inventory_data and not is_sys_inv_placeholder: combined_data["systemInventory"] = system_inventory_data
@@ -247,23 +258,14 @@ def output_to_json_combined(system_inventory_data, devenv_components_data, deven
     if devenv_env_vars_data: devenv_audit_data["environmentVariables"] = [ev.to_dict() for ev in devenv_env_vars_data]
     if devenv_issues_data: devenv_audit_data["identifiedIssues"] = [issue.to_dict() for issue in devenv_issues_data]
     if devenv_audit_data: combined_data["devEnvAudit"] = devenv_audit_data
-
-    if ocl_summary_data:
-        combined_data["oclSummary"] = {
-            "profile_count": len(ocl_summary_data),
-            "profiles": ocl_summary_data
-        }
-
-    if not combined_data and is_sys_inv_placeholder : combined_data["systemInventory"] = system_inventory_data # Ensure placeholder is added if nothing else
-    # Check if combined_data is still empty (e.g. only placeholder sys_inv and no ocl_summary)
-    if not combined_data and not ocl_summary_data: # If only placeholder sys_inv was there, and no OCL, it's already in. If not even placeholder, this is true.
-        logging.info("No data to save to JSON report."); return
+    if not combined_data and is_sys_inv_placeholder : combined_data["systemInventory"] = system_inventory_data
+    if not combined_data: logging.info("No data to save to JSON report."); return
     try:
         os.makedirs(output_dir, exist_ok=True); full_path = os.path.join(output_dir, filename)
         with open(full_path, 'w', encoding='utf-8') as f: json.dump(combined_data, f, ensure_ascii=False, indent=4)
         logging.info(f"Combined JSON report successfully saved to {full_path}")
     except Exception as e: logging.error(f"Error saving combined JSON file to {output_dir}: {e}", exc_info=True); raise
-def output_to_markdown_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.md", include_system_sage_components_flag=True, ocl_summary_data=None):
+def output_to_markdown_combined(system_inventory_data, devenv_components_data, devenv_env_vars_data, devenv_issues_data, output_dir, filename="system_sage_combined_report.md", include_system_sage_components_flag=True):
     try:
         os.makedirs(output_dir, exist_ok=True); full_path = os.path.join(output_dir, filename)
         with open(full_path, 'w', encoding='utf-8') as f:
@@ -286,33 +288,8 @@ def output_to_markdown_combined(system_inventory_data, devenv_components_data, d
                         else: f.write("*No components/drivers found or component reporting is disabled.*\n"); f.write("\n")
             else: f.write("*No system inventory data collected.*\n\n")
             f.write("## Developer Environment Audit\n\n")
-            if devenv_components_data or devenv_env_vars_data or devenv_issues_data: f.write("*DevEnvAudit details omitted for brevity in this example.*\n\n") # Added extra \n for spacing
+            if devenv_components_data or devenv_env_vars_data or devenv_issues_data: f.write("*DevEnvAudit details omitted for brevity in this example.*\n")
             else: f.write("*No data collected by Developer Environment Audit.*\n\n")
-
-            # --- OCL Summary Section ---
-            f.write("## Overclocker's Logbook Summary\n\n")
-            if ocl_summary_data:
-                f.write(f"- **Total Profiles:** {len(ocl_summary_data)}\n\n")
-                if ocl_summary_data: # Only add table if there are profiles
-                    f.write("### Recent Profiles Overview\n\n")
-                    f.write("| Profile Name        | Last Modified Date   | Description (Optional) |\n")
-                    f.write("|---------------------|----------------------|------------------------|\n")
-                    # Limiting to first 5 profiles for brevity in report, can be adjusted
-                    for profile in ocl_summary_data[:5]:
-                        name = profile.get('name', 'N/A')
-                        mod_date = profile.get('last_modified_date', 'N/A')
-                        # Truncate description if too long
-                        desc = profile.get('description', 'N/A')
-                        if len(desc) > 50:
-                            desc = desc[:47] + "..."
-                        f.write(f"| {name} | {mod_date} | {desc} |\n")
-                    if len(ocl_summary_data) > 5:
-                        f.write(f"| ...and {len(ocl_summary_data) - 5} more profiles. |\n")
-                    f.write("\n")
-            else:
-                f.write("*No OCL profiles found.*\n\n")
-            # --- End OCL Summary Section ---
-
         logging.info(f"Combined Markdown report successfully saved to {full_path}")
     except Exception as e: logging.error(f"Error saving combined Markdown file: {e}", exc_info=True); raise
 class SystemSageApp(customtkinter.CTk):
@@ -733,6 +710,9 @@ class SystemSageApp(customtkinter.CTk):
     def on_ocl_profile_select_ctktable(self, selection_data):
         selected_row_index = selection_data.get('row')
         if selected_row_index is None: return
+        if self.ocl_profiles_table is None:
+            logging.error("on_ocl_profile_select_ctktable called but self.ocl_profiles_table is None.")
+            return
         try:
             if selected_row_index + 1 >= len(self.ocl_profiles_table.values): logging.warning(f"Selected row index {selected_row_index} is out of bounds."); return
             profile_id_val_str = self.ocl_profiles_table.values[selected_row_index + 1][0]
@@ -773,18 +753,6 @@ class SystemSageApp(customtkinter.CTk):
                 self.ocl_profile_details_text.delete("0.0", tk.END)
                 self.ocl_profile_details_text.configure(state=customtkinter.DISABLED) # Use CTk constant
 
-    def _fetch_ocl_summary(self):
-        """Helper to fetch OCL summary data and log potential errors."""
-        try:
-            ocl_summary = ocl_api.get_all_profiles()
-            if not ocl_summary:
-                logging.info("No OCL profiles found or OCL module returned empty list.")
-            return ocl_summary
-        except Exception as e:
-            logging.error(f"Error fetching OCL profiles summary: {e}", exc_info=True)
-            show_custom_messagebox(self, "OCL Data Error", f"Could not fetch OCL profile summary for report: {e}", dialog_type="warning")
-            return [] # Return empty list on error to prevent report generation failure
-
     def save_combined_report(self):
         dialog = CTkFileDialog(
             master=self,
@@ -792,66 +760,62 @@ class SystemSageApp(customtkinter.CTk):
             open_folder=True,
             initialdir=os.path.abspath(DEFAULT_OUTPUT_DIR)
         )
+
         output_dir = dialog.path
 
         if not output_dir:
             show_custom_messagebox(self, "Cancelled", "Save report cancelled.", dialog_type="info")
             return
         try:
-            ocl_profiles_summary = self._fetch_ocl_summary() # Fetch OCL data
-
             md_include_components = self.cli_args.markdown_include_components_flag if self.cli_args else DEFAULT_MARKDOWN_INCLUDE_COMPONENTS
             sys_inv_data_for_report = self.system_inventory_results
             is_sys_inv_placeholder = (self.system_inventory_results and len(self.system_inventory_results) == 1 and self.system_inventory_results[0].get('Category') == "Informational")
 
-            # If sys_inv is just a placeholder AND we have other actual data (DevEnv or OCL), don't include the placeholder text.
-            if is_sys_inv_placeholder and (self.devenv_components_results or self.devenv_env_vars_results or self.devenv_issues_results or ocl_profiles_summary):
-                sys_inv_data_for_report = []
-
-            output_to_json_combined(
-                sys_inv_data_for_report,
-                self.devenv_components_results,
-                self.devenv_env_vars_results,
-                self.devenv_issues_results,
-                output_dir,
-                ocl_summary_data=ocl_profiles_summary
-            )
-            # Note: output_to_markdown_combined will also need ocl_summary_data, but its internal logic is not changed in this subtask
-            output_to_markdown_combined(
-                sys_inv_data_for_report,
-                self.devenv_components_results,
-                self.devenv_env_vars_results,
-                self.devenv_issues_results,
-                output_dir,
-                include_system_sage_components_flag=md_include_components,
-                ocl_summary_data=ocl_profiles_summary
-            )
+            if is_sys_inv_placeholder and (self.devenv_components_results or self.devenv_env_vars_results or self.devenv_issues_results): sys_inv_data_for_report = []
+            elif is_sys_inv_placeholder: pass
+            output_to_json_combined(sys_inv_data_for_report, self.devenv_components_results, self.devenv_env_vars_results, self.devenv_issues_results, output_dir)
+            output_to_markdown_combined(sys_inv_data_for_report, self.devenv_components_results, self.devenv_env_vars_results, self.devenv_issues_results, output_dir, include_system_sage_components_flag=md_include_components)
             show_custom_messagebox(self, "Reports Saved", f"Combined reports saved to: {output_dir}", dialog_type="info")
         except Exception as e:
             logging.error(f"Error saving reports: {e}\n{traceback.format_exc()}", exc_info=True)
             show_custom_messagebox(self, "Save Error", f"Failed to save reports: {e}", dialog_type="error")
 
     def quit_app(self):
-        quit_dialog = customtkinter.CTkDialog(text="Do you really want to exit System Sage?",
-                                              title="Confirm Exit",
-                                              button_text_1="No",
-                                              button_text_2="Yes")
-        quit_dialog.geometry("300x150")
+        # Use CTkMessagebox for the initial exit confirmation
+        initial_quit_dialog = CTkMessagebox(
+            title="Confirm Exit",
+            message="Do you really want to exit System Sage?",
+            icon="question", # Adds a nice question mark icon
+            option_1="No",   # This will be the button on the left
+            option_2="Yes"   # This will be the button on the right
+        )
 
-        result = quit_dialog.get_input()
+        # The .get() method of CTkMessagebox returns the text of the clicked button
+        initial_result = initial_quit_dialog.get()
 
-        if result == "Yes":
+        if initial_result == "Yes":
             if self.scan_in_progress:
-                scan_exit_dialog = customtkinter.CTkDialog(text="A scan is currently in progress. Exiting now might lose unsaved data. Do you really want to exit?",
-                                                            title="Confirm Exit During Scan",
-                                                            button_text_1="No, Continue",
-                                                            button_text_2="Yes, Exit")
-                scan_exit_dialog.geometry("350x180")
-                scan_exit_result = scan_exit_dialog.get_input()
+                # Use CTkMessagebox for the "scan in progress" confirmation
+                scan_exit_dialog = CTkMessagebox(
+                    title="Confirm Exit During Scan",
+                    message="A scan is currently in progress. Exiting now might lose unsaved data. Do you really want to exit?",
+                    icon="warning", # Adds a warning icon
+                    option_1="No, Continue",
+                    option_2="Yes, Exit"
+                )
+                scan_exit_result = scan_exit_dialog.get() # Get the clicked button's text
+
                 if scan_exit_result == "Yes, Exit":
-                    self.destroy()
+                    print("User confirmed exit despite scan in progress.") # Optional: add a log for clarity
+                    self.destroy() # Closes the main application window
+                else:
+                    print("User chose to continue scan.") # Optional: add a log
             else:
-                self.destroy()
+                print("User confirmed exit.") # Optional: add a log
+                self.destroy() # Closes the main application window
+        else:
+            print("User cancelled exit.") # Optional: add a log
+            # The dialog was closed or "No" was selected, do nothing
 
 
 if __name__ == "__main__":
@@ -901,5 +865,3 @@ if __name__ == "__main__":
         except Exception as critical_e:
             print(f"CRITICAL FALLBACK ERROR (cannot show GUI messagebox): {critical_e}", file=sys.stderr)
             print(f"Original critical error: {e}", file=sys.stderr)
-
-[end of systemsage_main.py]

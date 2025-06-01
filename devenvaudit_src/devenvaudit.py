@@ -1,37 +1,41 @@
 """
 Developer Environment Auditor (DevEnvAudit)
 
-Main entry point for the application. Initializes and launches the GUI.
+This module provides the core logic for auditing the developer environment.
+It is intended to be imported and used by the main SystemSage application.
 """
 import logging
 import os
-import tkinter as tk
-from gui_manager import MainAppWindow
-from config_manager import load_config, save_config, DEFAULT_CONFIG, CONFIG_FILE
-_PATH
+# import tkinter as tk # Not used directly and not needed if no GUI here
+# from gui_manager import MainAppWindow # <<< REMOVE THIS LINE <<<
+
+from config_manager import load_config, save_config, DEFAULT_CONFIG, CONFIG_FILE_PATH
+from devenvaudit_src.scan_logic import EnvironmentScanner # Ensure this import is correct
 
 # --- Global Constants ---
 APP_NAME = "Developer Environment Auditor"
 APP_VERSION = "1.1.0" # Corresponds to prompt version
-LOG_FILE_NAME = "devenvaudit.log"
+LOG_FILE_NAME = "devenvaudit_module.log" # Renamed to reflect its module role
 
+# NOTE: If SystemSageV2.0.py handles global logging,
+#       this setup_logging might be redundant or need adjustment
+#       to ensure consistent logging for the whole application.
+#       Consider if logging should be handled by SystemSageV2.0.py's
+#       setup_logging and this module just *uses* the logger.
 def setup_logging():
-    """Configures logging for the application."""
-    log_dir = os.path.dirname(CONFIG_FILE_PATH) # Place log file near config fil
-e
+    """Configures logging for the module if run standalone,
+    or if the main app doesn't set up logging globally.
+    Consider removing or adapting if SystemSageV2.0.py has primary logging setup.
+    """
+    log_dir = os.path.dirname(CONFIG_FILE_PATH) # Place log file near config file
     log_file = os.path.join(log_dir, LOG_FILE_NAME)
 
-    # Ensure log directory exists
     if not os.path.exists(log_dir):
         try:
             os.makedirs(log_dir)
         except OSError as e:
-            # Fallback to current directory if user home is not writable for log
-s
-            print(f"Warning: Could not create log directory {log_dir}: {e}. Logg
-ing to current directory.")
+            print(f"Warning: Could not create log directory {log_dir}: {e}. Logging to current directory.")
             log_file = LOG_FILE_NAME
-
 
     logging.basicConfig(
         level=logging.INFO, # Default level for file and console
@@ -39,58 +43,26 @@ ing to current directory.")
         datefmt='%Y-%m-%d %H:%M:%S',
         handlers=[
             logging.FileHandler(log_file, mode='a', encoding='utf-8'), # Append
-mode
             logging.StreamHandler() # Outputs to console (stderr by default)
         ]
     )
-    # You can set different levels for different handlers or loggers if needed
-    # e.g., file_handler.setLevel(logging.DEBUG)
-
-    # Test log message
-    logging.info(f"{APP_NAME} v{APP_VERSION} logging initialized. Log file: {log
-_file}")
+    logging.info(f"{APP_NAME} v{APP_VERSION} module logging initialized. Log file: {log_file}")
 
 
-def main():
-    """Main function to initialize and run the application."""
+# --- Functions that the main SystemSageApp would call ---
 
-    # Initialize configuration (load or create default devenvaudit_config.json)
-    # This ensures the config file exists with defaults before GUI tries to load
- it.
-    try:
-        config = load_config()
-        # If config was newly created or updated with defaults, save_config was
-already called by load_config.
-        logging.info(f"Configuration loaded from: {CONFIG_FILE_PATH}")
-    except Exception as e:
-        logging.error(f"Fatal error during configuration loading: {e}", exc_info
-=True)
-        # Fallback or exit if config is critical and cannot be loaded/created
-        # For now, load_config returns defaults, so we should be okay.
-        config = DEFAULT_CONFIG # Ensure config is not None
+def get_devenvaudit_results(progress_callback=None, status_callback=None):
+    """
+    Performs the developer environment audit and returns the results.
+    This function is designed to be called by the main SystemSage application.
+    """
+    # Assuming EnvironmentScanner is what actually performs the scan
+    scanner = EnvironmentScanner(progress_callback=progress_callback, status_callback=status_callback)
+    components, env_vars, issues = scanner.run_scan()
+    return components, env_vars, issues
 
-    # Setup application-wide logging (after config dir is potentially created)
-    setup_logging() # Call this after load_config as it might use CONFIG_FILE_PA
-TH for log dir
-
-    # Instantiate and run the main GUI application window
-    try:
-        app = MainAppWindow(initial_config=config) # Pass the loaded config
-        app.mainloop()
-    except Exception as e:
-        logging.critical(f"An unhandled exception occurred in the GUI: {e}", exc
-_info=True)
-        # Optionally, show a simple error dialog if Tkinter is still partially f
-unctional
-        # import tkinter as tk
-        # from tkinter import messagebox
-        # root = tk.Tk()
-        # root.withdraw() # Hide the main Tk window
-        # messagebox.showerror("Fatal Error", f"A critical error occurred: {e}\n
-See log for details.")
-        # root.destroy()
-
-    logging.info(f"{APP_NAME} finished.")
-
-if __name__ == "__main__":
-    main()
+# No main() function or if __name__ == "__main__": block anymore,
+# as this file is now purely a module.
+# If you wanted to keep it runnable for *testing the module logic only*
+# without the GUI, you could adapt the __main__ block to just call
+# get_devenvaudit_results and print them.
