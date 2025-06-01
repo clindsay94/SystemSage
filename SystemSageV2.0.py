@@ -16,6 +16,7 @@
 # - Replaced filedialog.askdirectory with CTkFileDialog.
 # - Added custom theme and font setup.
 # - Refined widget styling and layout.
+# - Added a fallback mechanism to display a `tkinter` messagebox in case of critical UI errors with CustomTkinter.
 
 
 import os
@@ -29,8 +30,11 @@ from threading import Thread
 import traceback
 import sys
 import customtkinter
-from CTkTable import CTkTable
-from CTkFileDialog import CTkFileDialog # Import CTkFileDialog
+from customtkinter import CTkTable # Import CTkTable for table widgets
+from customtkinter import CTkFileDialog # Import CTkFileDialog
+from customtkinter import CTkMessagebox # Import CTkMessagebox
+
+
 
 # --- Helper function for PyInstaller resource path ---
 def resource_path(relative_path):
@@ -139,6 +143,65 @@ COMPONENT_KEYWORDS_FILE = resource_path("systemsage_component_keywords.json")
 LAUNCHER_HINTS_FILE = resource_path("systemsage_launcher_hints.json")
 COMPONENT_KEYWORDS = load_json_config(COMPONENT_KEYWORDS_FILE, DEFAULT_COMPONENT_KEYWORDS)
 LAUNCHER_HINTS = load_json_config(LAUNCHER_HINTS_FILE, DEFAULT_LAUNCHER_HINTS)
+
+# --- Logging Configuration ---
+class SystemSageApp(customtkinter.CTk):
+    def __init__(self, cli_args=None):
+        super().__init__()
+        self.cli_args = cli_args
+        customtkinter.set_appearance_mode("System")
+
+        # --- Theme and Styling Constants ---
+        self.corner_radius_std = 6
+        self.corner_radius_soft = 8
+        self.padding_std = 5
+        self.padding_large = 10
+        self.button_hover_color = "gray70" # Example, may need adjustment based on theme
+        # self.action_button_fg_color = "default" # Or a specific color if needed
+
+        theme_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "custom_theme.json")
+        if os.path.exists(theme_path):
+            try:
+                customtkinter.set_default_color_theme(theme_path)
+                logging.info(f"Loaded custom theme from {theme_path}")
+            except Exception as e:
+                logging.error(f"Failed to load custom theme from {theme_path}: {e}. Using default dark-blue theme.")
+                customtkinter.set_default_color_theme("dark-blue") # Fallback
+        else:
+            customtkinter.set_default_color_theme("dark-blue") # Fallback
+            logging.warning(f"Custom theme file not found at {theme_path}. Using default dark-blue theme.")
+
+        self.default_font = ("Roboto", 12)
+        self.button_font = ("Roboto", 12, "bold")
+        self.title_font = ("Roboto", 14, "bold") # Font for section titles
+        self.option_add("*Font", self.default_font)
+        self.title("System Sage V2.0")
+        self.geometry("1200x850")
+
+        self.inventory_scan_button = None
+        self.devenv_audit_button = None
+
+        self.inventory_table = None
+        self.devenv_components_table = None
+        self.devenv_env_vars_table = None
+        self.devenv_issues_table = None
+        self.ocl_profiles_table = None
+        self.selected_ocl_profile_id = None
+
+        self.scan_in_progress = False
+        self.system_inventory_results = []
+        self.devenv_components_results = []
+        self.devenv_env_vars_results = []
+        self.devenv_issues_results = []
+
+        self.ocl_profile_details_text = None
+        self.ocl_refresh_button = None
+        self.ocl_save_new_button = None
+        self.ocl_update_selected_button = None
+
+        if cli_args:
+            # Handle command-line arguments
+            pass
 
 class DirectorySizeError(Exception): pass
 def is_likely_component(display_name, publisher):
@@ -746,6 +809,7 @@ class SystemSageApp(customtkinter.CTk):
             open_folder=True,
             initialdir=os.path.abspath(DEFAULT_OUTPUT_DIR)
         )
+
         output_dir = dialog.path
 
         if not output_dir:
@@ -766,26 +830,41 @@ class SystemSageApp(customtkinter.CTk):
             show_custom_messagebox(self, "Save Error", f"Failed to save reports: {e}", dialog_type="error")
 
     def quit_app(self):
-        quit_dialog = customtkinter.CTkDialog(text="Do you really want to exit System Sage?",
-                                              title="Confirm Exit",
-                                              button_text_1="No",
-                                              button_text_2="Yes")
-        quit_dialog.geometry("300x150")
+        # Use CTkMessagebox for the initial exit confirmation
+        initial_quit_dialog = CTkMessagebox(
+            title="Confirm Exit",
+            message="Do you really want to exit System Sage?",
+            icon="question", # Adds a nice question mark icon
+            option_1="No",   # This will be the button on the left
+            option_2="Yes"   # This will be the button on the right
+        )
 
-        result = quit_dialog.get_input()
+        # The .get() method of CTkMessagebox returns the text of the clicked button
+        initial_result = initial_quit_dialog.get()
 
-        if result == "Yes":
+        if initial_result == "Yes":
             if self.scan_in_progress:
-                scan_exit_dialog = customtkinter.CTkDialog(text="A scan is currently in progress. Exiting now might lose unsaved data. Do you really want to exit?",
-                                                            title="Confirm Exit During Scan",
-                                                            button_text_1="No, Continue",
-                                                            button_text_2="Yes, Exit")
-                scan_exit_dialog.geometry("350x180")
-                scan_exit_result = scan_exit_dialog.get_input()
+                # Use CTkMessagebox for the "scan in progress" confirmation
+                scan_exit_dialog = CTkMessagebox(
+                    title="Confirm Exit During Scan",
+                    message="A scan is currently in progress. Exiting now might lose unsaved data. Do you really want to exit?",
+                    icon="warning", # Adds a warning icon
+                    option_1="No, Continue",
+                    option_2="Yes, Exit"
+                )
+                scan_exit_result = scan_exit_dialog.get() # Get the clicked button's text
+
                 if scan_exit_result == "Yes, Exit":
-                    self.destroy()
+                    print("User confirmed exit despite scan in progress.") # Optional: add a log for clarity
+                    self.destroy() # Closes the main application window
+                else:
+                    print("User chose to continue scan.") # Optional: add a log
             else:
-                self.destroy()
+                print("User confirmed exit.") # Optional: add a log
+                self.destroy() # Closes the main application window
+        else:
+            print("User cancelled exit.") # Optional: add a log
+            # The dialog was closed or "No" was selected, do nothing
 
 
 if __name__ == "__main__":
