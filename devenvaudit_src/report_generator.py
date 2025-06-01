@@ -9,9 +9,14 @@ from datetime import datetime
 from typing import List, Dict, Any # Add typing imports
 
 # Attempt to import data classes for type hinting
+<<<<<<< HEAD
 # These might still show as unresolved in Pylance if the root workspace/PYTHONPA
 TH issue persists
 from scan_logic import DetectedComponent, EnvironmentVariableInfo, ScanIssue
+=======
+# These might still show as unresolved in Pylance if the root workspace/PYTHONPATH issue persists
+from .scan_logic import DetectedComponent, EnvironmentVariableInfo, ScanIssue
+>>>>>>> pr7-branch
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +25,50 @@ class ReportGenerator:
                  detected_components: List[DetectedComponent],
                  environment_variables: List[EnvironmentVariableInfo],
                  issues: List[ScanIssue]):
+<<<<<<< HEAD
         self.detected_components = sorted(detected_components, key=lambda x: (x.
 category, x.name, x.version))
         self.environment_variables = sorted(environment_variables, key=lambda x:
  x.name)
         self.issues = sorted(issues, key=lambda x: (x.severity, x.category, x.de
 scription))
+=======
+        self.detected_components = sorted(detected_components, key=lambda x: (x.category, x.name, x.version))
+        self.environment_variables = sorted(environment_variables, key=lambda x: x.name)
+        self.issues = sorted(issues, key=lambda x: (x.severity, x.category, x.description))
+>>>>>>> pr7-branch
         self.report_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def _format_component(self, component, format_type="txt"):
         """Formats a single component for different output types."""
+<<<<<<< HEAD
+=======
+        if format_type == "html":
+            # Determine Executable/Command
+            exe_command = os.path.basename(component.executable_path or component.path or "N/A")
+
+            # Details Summary
+            details_summary_parts = []
+            if component.details:
+                details_summary_parts.append(f"Details: {', '.join([f'{k}: {v}' for k,v in list(component.details.items())[:2]])}{'...' if len(component.details) > 2 else ''}")
+            if component.update_info and component.update_info.get('is_update_available'):
+                details_summary_parts.append(f"Update: {component.version} -> {component.update_info.get('latest_version', 'N/A')}")
+            if component.issues:
+                details_summary_parts.append(f"Issues: {len(component.issues)}")
+            details_summary_str = "; ".join(details_summary_parts)
+            if not details_summary_str:
+                details_summary_str = "N/A"
+
+            return f"""<tr>
+  <td>{html.escape(str(component.name))}</td>
+  <td>{html.escape(str(component.version))}</td>
+  <td>{html.escape(str(component.category))}</td>
+  <td><code>{html.escape(str(component.path))}</code></td>
+  <td><code>{html.escape(exe_command)}</code></td>
+  <td>{html.escape(details_summary_str)}</td>
+</tr>"""
+
+>>>>>>> pr7-branch
         lines = []
         name_version = f"{component.name} ({component.version})"
         if format_type == "md":
@@ -37,6 +76,7 @@ scription))
             lines.append(f"- **ID:** `{component.id}`")
             lines.append(f"- **Category:** {component.category}")
             lines.append(f"- **Path:** `{component.path}`")
+<<<<<<< HEAD
             if component.executable_path and component.executable_path != compon
 ent.path:
                 lines.append(f"- **Executable:** `{component.executable_path}`")
@@ -53,11 +93,17 @@ e></li>")
 ent.path:
                 lines.append(f"<li><b>Executable:</b> <code>{html.escape(compone
 nt.executable_path)}</code></li>")
+=======
+            if component.executable_path and component.executable_path != component.path:
+                lines.append(f"- **Executable:** `{component.executable_path}`")
+        # Removed old HTML list formatting here
+>>>>>>> pr7-branch
         else: # txt
             lines.append(f"Tool: {name_version}")
             lines.append(f"  ID: {component.id}")
             lines.append(f"  Category: {component.category}")
             lines.append(f"  Path: {component.path}")
+<<<<<<< HEAD
             if component.executable_path and component.executable_path != compon
 ent.path:
                 lines.append(f"  Executable: {component.executable_path}")
@@ -81,10 +127,33 @@ p-to-date"
 t {ui['latest_version']} (via {ui['package_manager_name']})"
                 cmd_line = f"Update Command: `{ui['update_command']}`" if ui.get
 ('update_command') else ""
+=======
+            if component.executable_path and component.executable_path != component.path:
+                lines.append(f"  Executable: {component.executable_path}")
+
+        if component.details:
+            # if format_type == "html": lines.append("<li><b>Details:</b><ul>") # Removed for table
+            # else: lines.append(f"  Details:") # Keep for TXT/MD
+            if format_type != "html": lines.append(f"  Details:")
+
+            for key, value in component.details.items():
+                if format_type == "md": lines.append(f"  - **{key}:** {value}")
+                # elif format_type == "html": lines.append(f"<li><em>{html.escape(key)}:</em> {html.escape(str(value))}</li>") # Removed for table
+                elif format_type != "html": lines.append(f"    {key}: {value}") # TXT
+            # if format_type == "html": lines.append("</ul></li>") # Removed for table
+
+        if component.update_info:
+            ui = component.update_info
+            status = "Update Available" if ui.get('is_update_available') else "Up-to-date"
+            if ui.get('latest_version'):
+                update_line = f"{status}: Installed {component.version} -> Latest {ui['latest_version']} (via {ui['package_manager_name']})"
+                cmd_line = f"Update Command: `{ui['update_command']}`" if ui.get('update_command') else ""
+>>>>>>> pr7-branch
 
                 if format_type == "md":
                     lines.append(f"- **Update Status:** {update_line}")
                     if cmd_line: lines.append(f"  - {cmd_line}")
+<<<<<<< HEAD
                 elif format_type == "html":
                     lines.append(f"<li><b>Update Status:</b> {html.escape(update
 _line)}")
@@ -92,10 +161,18 @@ _line)}")
 e(cmd_line)}</em>")
                     lines.append("</li>")
                 else:
+=======
+                # elif format_type == "html": # Removed for table
+                #     lines.append(f"<li><b>Update Status:</b> {html.escape(update_line)}")
+                #     if cmd_line: lines.append(f"<br/>&nbsp;&nbsp;<em>{html.escape(cmd_line)}</em>")
+                #     lines.append("</li>")
+                elif format_type != "html": # TXT
+>>>>>>> pr7-branch
                     lines.append(f"  Update Status: {update_line}")
                     if cmd_line: lines.append(f"    {cmd_line}")
 
         if component.issues:
+<<<<<<< HEAD
             if format_type == "html": lines.append("<li><b>Issues:</b><ul>")
             else: lines.append(f"  Issues:")
             for issue in component.issues: # issue is already a string or ScanIs
@@ -112,10 +189,30 @@ desc)}{html.escape(sev)}</em></li>")
 
         if format_type == "html": lines.append("</ul>")
         return "\n".join(lines)
+=======
+            # if format_type == "html": lines.append("<li><b>Issues:</b><ul>") # Removed for table
+            # else: lines.append(f"  Issues:") # Keep for TXT/MD
+            if format_type != "html": lines.append(f"  Issues:")
+            for issue in component.issues: # issue is already a string or ScanIssue object
+                desc = issue.description if hasattr(issue, 'description') else str(issue)
+                sev = f" ({issue.severity})" if hasattr(issue, 'severity') else ""
+                if format_type == "md": lines.append(f"  - *{desc}{sev}*")
+                # elif format_type == "html": lines.append(f"<li><em>{html.escape(desc)}{html.escape(sev)}</em></li>") # Removed for table
+                elif format_type != "html": lines.append(f"    - {desc}{sev}") # TXT
+            # if format_type == "html": lines.append("</ul></li>") # Removed for table
+
+        # if format_type == "html": lines.append("</ul>") # Removed for table
+        if format_type != "html":
+            return "\n".join(lines)
+        # For HTML, the new method returns a full <tr> string, so this join is not needed for HTML.
+        return "" # Should not be reached for HTML if logic is correct.
+
+>>>>>>> pr7-branch
 
     def _format_env_var(self, env_var, format_type="txt"):
         lines = []
         val_display = env_var.value
+<<<<<<< HEAD
         if len(val_display) > 200 and format_type != "json": # Truncate long val
 ues for readability
             val_display = val_display[:200] + "..."
@@ -126,10 +223,36 @@ play}`")
         elif format_type == "html":
             lines.append(f"<li><code>{html.escape(env_var.name)}</code> (<i>{htm
 l.escape(env_var.scope)}</i>): <code>{html.escape(val_display)}</code>")
+=======
+        if len(val_display) > 200 and format_type != "json": # Truncate long values for readability
+            val_display = val_display[:200] + "..."
+
+        if format_type == "html":
+            issues_str_parts = []
+            if env_var.issues:
+                for issue in env_var.issues:
+                    desc = issue.description if hasattr(issue, 'description') else str(issue)
+                    sev = f" ({issue.severity})" if hasattr(issue, 'severity') else ""
+                    issues_str_parts.append(f"Issue:{html.escape(sev)} {html.escape(desc)}")
+            issues_html_summary = "<br/>".join(issues_str_parts) if issues_str_parts else "OK"
+
+            return f"""<tr>
+  <td><code>{html.escape(env_var.name)}</code></td>
+  <td><code>{html.escape(val_display)}</code></td>
+  <td>{html.escape(env_var.scope)}</td>
+  <td>{issues_html_summary}</td>
+</tr>"""
+
+        # For MD and TXT formats
+        lines = []
+        if format_type == "md":
+            lines.append(f"- **`{html.escape(env_var.name)}`** (`{html.escape(env_var.scope)}`): `{html.escape(val_display)}`")
+>>>>>>> pr7-branch
         else: # txt
             lines.append(f"{env_var.name} ({env_var.scope}): {val_display}")
 
         if env_var.issues:
+<<<<<<< HEAD
             if format_type == "html": lines.append("<ul>")
             for issue in env_var.issues:
                 desc = issue.description if hasattr(issue, 'description') else s
@@ -143,10 +266,18 @@ scape(sev)} {html.escape(desc)}</em></li>")
                 else: lines.append(f"  - Issue:{sev} {desc}")
             if format_type == "html": lines.append("</ul>")
         if format_type == "html": lines.append("</li>")
+=======
+            for issue in env_var.issues:
+                desc = issue.description if hasattr(issue, 'description') else str(issue)
+                sev = f" ({issue.severity})" if hasattr(issue, 'severity') else ""
+                if format_type == "md": lines.append(f"  - *Issue:{html.escape(sev)} {html.escape(desc)}*")
+                else: lines.append(f"  - Issue:{sev} {desc}")
+>>>>>>> pr7-branch
         return "\n".join(lines)
 
     def _format_issue(self, issue, format_type="txt"):
         line = ""
+<<<<<<< HEAD
         comp_info = f" (Component: {issue.component_id})" if issue.component_id
 else ""
         path_info = f" (Path: {issue.related_path})" if issue.related_path else
@@ -162,12 +293,42 @@ ape(path_info)}</li>"
         else: # txt
             line = f"- {issue.severity} ({issue.category}): {issue.description}{
 comp_info}{path_info}"
+=======
+        comp_info = f" (Component: {html.escape(str(issue.component_id))})" if issue.component_id else ""
+        path_info = f" (Path: {html.escape(str(issue.related_path))})" if issue.related_path else ""
+
+        if format_type == "html":
+            related_info = html.escape(str(issue.component_id or issue.related_path or "N/A"))
+            suggested_action = html.escape(str(issue.recommendation or "Refer to documentation/Investigate further"))
+
+            # Apply class to severity cell for potential styling
+            severity_class = f"severity-{html.escape(issue.severity.lower())}"
+
+            return f"""<tr>
+  <td>{html.escape(str(issue.category))}</td>
+  <td>{html.escape(issue.description)}</td>
+  <td>{related_info}</td>
+  <td>{suggested_action}</td>
+  <td class='{severity_class}'>{html.escape(str(issue.severity))}</td>
+</tr>"""
+
+        # For MD and TXT formats
+        if format_type == "md":
+            line = f"- **{html.escape(issue.severity)} ({html.escape(issue.category)}):** {html.escape(issue.description)}{comp_info}{path_info}"
+            if issue.recommendation:
+                line += f" (Suggestion: {html.escape(issue.recommendation)})"
+        else: # txt
+            line = f"- {issue.severity} ({issue.category}): {issue.description}{comp_info}{path_info}"
+            if issue.recommendation:
+                line += f" (Suggestion: {issue.recommendation})"
+>>>>>>> pr7-branch
         return line
 
     def generate_report_data_for_gui(self):
         """Prepares data in a structured way suitable for the GUI."""
         # This can return the raw lists, and the GUI can format them.
         # Or, it can return pre-formatted strings if the GUI needs that.
+<<<<<<< HEAD
         # For now, let's assume GUI will handle its own formatting from these ob
 jects.
         return {
@@ -176,6 +337,13 @@ jects.
 ponents],
             "environment_variables": [ev.to_dict() for ev in self.environment_va
 riables],
+=======
+        # For now, let's assume GUI will handle its own formatting from these objects.
+        return {
+            "report_time": self.report_time,
+            "detected_components": [comp.to_dict() for comp in self.detected_components],
+            "environment_variables": [ev.to_dict() for ev in self.environment_variables],
+>>>>>>> pr7-branch
             "issues": [iss.to_dict() for iss in self.issues]
         }
 
@@ -201,8 +369,12 @@ riables],
                     for ev in self.environment_variables:
                         f.write(self._format_env_var(ev, "txt") + "\n")
                 else:
+<<<<<<< HEAD
                     f.write("No environment variables collected or to display.\n
 ")
+=======
+                    f.write("No environment variables collected or to display.\n")
+>>>>>>> pr7-branch
                 f.write("\n")
 
                 f.write("Identified Issues & Warnings\n")
@@ -239,8 +411,12 @@ riables],
                     for ev in self.environment_variables:
                         f.write(self._format_env_var(ev, "md") + "\n")
                 else:
+<<<<<<< HEAD
                     f.write("No environment variables collected or to display.\n
 ")
+=======
+                    f.write("No environment variables collected or to display.\n")
+>>>>>>> pr7-branch
                 f.write("\n---\n\n")
 
                 f.write("## Identified Issues & Warnings\n\n")
@@ -257,15 +433,23 @@ riables],
 
     def export_to_json(self, filepath):
         logger.info(f"Exporting report to JSON: {filepath}")
+<<<<<<< HEAD
         report_data = self.generate_report_data_for_gui() # Use the same structu
 re
+=======
+        report_data = self.generate_report_data_for_gui() # Use the same structure
+>>>>>>> pr7-branch
         try:
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report_data, f, indent=2)
             logger.info(f"JSON report saved to {filepath}")
             return True
+<<<<<<< HEAD
         except (IOError, TypeError) as e: # TypeError for objects not serializab
 le
+=======
+        except (IOError, TypeError) as e: # TypeError for objects not serializable
+>>>>>>> pr7-branch
             logger.error(f"Failed to write JSON report to {filepath}: {e}")
             return False
 
@@ -280,6 +464,7 @@ le
   <title>Developer Environment Audit Report</title>
   <style>
     body {{ font-family: sans-serif; margin: 20px; line-height: 1.6; }}
+<<<<<<< HEAD
     .container {{ max-width: 1000px; margin: auto; background: #f9f9f9; padding:
  20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
     h1, h2, h3 {{ color: #333; }}
@@ -306,6 +491,30 @@ ng: 10px; width: 100%; border: none; text-align: left; outline: none; font-size:
     .content {{ padding: 0 18px; max-height: 0; overflow: hidden; transition: ma
 x-height 0.2s ease-out; background-color: #f1f1f1; border-radius: 0 0 5px 5px; }
 }
+=======
+    .container {{ max-width: 1000px; margin: auto; background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
+    h1, h2 {{ color: #333; }}
+    h1 {{ text-align: center; }}
+    h2 {{ border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px; }}
+    /* ul {{ list-style-type: none; padding-left: 0; }} */ /* Not needed if all sections are tables */
+    /* li {{ margin-bottom: 10px; }} */ /* Not needed if all sections are tables */
+    code {{ background-color: #eef; padding: 2px 5px; border-radius: 4px; font-family: monospace; }}
+    table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+    th, td {{ text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }}
+    th {{ background-color: #f0f0f0; }}
+    tr:hover {{ background-color: #f5f5f5; }}
+    /* Removed .issue class styling as issues are now in table rows */
+    /* Specific styling for severity can be done via td classes if needed e.g. .severity-critical */
+    .severity-critical {{ color: red; font-weight: bold; }}
+    .severity-warning {{ color: orange; }}
+    .severity-info {{ color: dodgerblue; }}
+    .collapsible {{ background-color: #777; color: white; cursor: pointer; padding: 10px; width: 100%; border: none; text-align: left; outline: none; font-size: 1.1em; margin-top:10px; border-radius: 5px; }}
+    .collapsible:hover {{ background-color: #555; }}
+    .collapsible.active:after {{ content: "\\2212"; }} /* Minus sign */
+    .collapsible:not(.active):after {{ content: '\\002B'; }} /* Plus sign */
+    .collapsible:after {{ font-weight: bold; float: right; margin-left: 5px; }}
+    .content {{ padding: 0 18px; max-height: 0; overflow: hidden; transition: max-height 0.2s ease-out; background-color: #f1f1f1; border-radius: 0 0 5px 5px; }}
+>>>>>>> pr7-branch
     .timestamp {{ text-align: center; color: #777; margin-bottom: 20px; }}
   </style>
 </head>
@@ -314,24 +523,77 @@ x-height 0.2s ease-out; background-color: #f1f1f1; border-radius: 0 0 5px 5px; }
 <h1>Developer Environment Audit Report</h1>
 <p class='timestamp'>Generated: {html.escape(self.report_time)}</p>
 
+<<<<<<< HEAD
 <button type='button' class='collapsible active'>Detected Tools & Versions</butt
 on>
 <div class='content' style='max-height: initial;'>
 {{components_section}}
+=======
+<button type='button' class='collapsible active'>Detected Tools & Versions</button>
+<div class='content' style='max-height: initial;'>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Version</th>
+        <th>Category</th>
+        <th>Path</th>
+        <th>Executable/Command</th>
+        <th>Details Summary</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{components_section}}
+    </tbody>
+  </table>
+>>>>>>> pr7-branch
 </div>
 
 <button type='button' class='collapsible'>Active Environment Variables</button>
 <div class='content'>
+<<<<<<< HEAD
 <ul>
 {{env_vars_section}}
 </ul>
+=======
+  <table>
+    <thead>
+      <tr>
+        <th>Variable Name</th>
+        <th>Value</th>
+        <th>Source</th>
+        <th>Status/Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{env_vars_section}}
+    </tbody>
+  </table>
+>>>>>>> pr7-branch
 </div>
 
 <button type='button' class='collapsible'>Identified Issues & Warnings</button>
 <div class='content'>
+<<<<<<< HEAD
 <ul>
 {{issues_section}}
 </ul>
+=======
+  <table>
+    <thead>
+      <tr>
+        <th>Issue Type</th>
+        <th>Description</th>
+        <th>Related Component/Variable</th>
+        <th>Suggested Action</th>
+        <th>Severity</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{issues_section}}
+    </tbody>
+  </table>
+>>>>>>> pr7-branch
 </div>
 
 <script>
@@ -343,7 +605,18 @@ on>
       if (content.style.maxHeight){{
         content.style.maxHeight = null;
       }} else {{
+<<<<<<< HEAD
         content.style.maxHeight = content.scrollHeight + "px";
+=======
+        // Ensure smooth animation for table by checking if parent is the one being animated.
+        var parentContentDiv = this.nextElementSibling;
+        if (parentContentDiv.classList.contains('content')) {{
+            parentContentDiv.style.maxHeight = parentContentDiv.scrollHeight + "px";
+        }} else {{
+            // Fallback for other content types if any
+            content.style.maxHeight = content.scrollHeight + "px";
+        }}
+>>>>>>> pr7-branch
       }}
     }});
   }}
@@ -355,22 +628,33 @@ on>
         components_html = ""
         if self.detected_components:
             for comp in self.detected_components:
+<<<<<<< HEAD
                 components_html += self._format_component(comp, "html") + "<hr/>
 \n"
         else:
             components_html = "<p>No components detected.</p>\n"
+=======
+                components_html += self._format_component(comp, "html") + "\n" # Removed <hr/>
+        else:
+            components_html = "<tr><td colspan='6'>No components detected.</td></tr>\n"
+>>>>>>> pr7-branch
 
         env_vars_html = ""
         if self.environment_variables:
             for ev in self.environment_variables:
                 env_vars_html += self._format_env_var(ev, "html") + "\n"
         else:
+<<<<<<< HEAD
             env_vars_html = "<li>No environment variables collected or to displa
 y.</li>\n"
+=======
+            env_vars_html = "<tr><td colspan='4'>No environment variables collected or to display.</td></tr>\n"
+>>>>>>> pr7-branch
 
         issues_html = ""
         if self.issues:
             for issue in self.issues:
+<<<<<<< HEAD
                 issues_html += f"<div class='issue {html.escape(issue.severity)}
 '>"
                 issues_html += self._format_issue(issue, "html") + "</div>\n"
@@ -379,6 +663,13 @@ y.</li>\n"
 
         final_html = html_template.replace("{{components_section}}", components_
 html)
+=======
+                issues_html += self._format_issue(issue, "html") + "\n" # Removed div wrapper
+        else:
+            issues_html = "<tr><td colspan='5'>No issues identified.</td></tr>\n"
+
+        final_html = html_template.replace("{{components_section}}", components_html)
+>>>>>>> pr7-branch
         final_html = final_html.replace("{{env_vars_section}}", env_vars_html)
         final_html = final_html.replace("{{issues_section}}", issues_html)
 
@@ -390,6 +681,7 @@ html)
         except IOError as e:
             logger.error(f"Failed to write HTML report to {filepath}: {e}")
             return False
+<<<<<<< HEAD
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(
@@ -422,13 +714,54 @@ ath /opt/jdk-11 does not exist", "Critical", related_path="/opt/jdk-11")]),
         ScanIssue("Global issue example", "Critical", category="System"),
         ScanIssue("Another warning", "Warning", component_id="python_3.9_python.
 exe", category="Configuration")
+=======
+        except Exception as e: # Catch any other unexpected error during HTML generation
+            logger.error(f"An unexpected error occurred during HTML export: {e}", exc_info=True)
+            return False
+
+
+if __name__ == '__main__':
+    # Ensure os is imported if running directly for os.path.basename used in _format_component
+    import os
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # Create dummy data for testing
+    # Assuming scan_logic.py is in the same directory or PYTHONPATH
+    from scan_logic import DetectedComponent, EnvironmentVariableInfo, ScanIssue
+
+
+    comps = [
+        DetectedComponent(id="python_3.9_python.exe", name="Python", category="Language", version="3.9.7",
+                          path="/usr/bin/python3.9", executable_path="/usr/bin/python3.9",
+                          details={"Architecture": "64-bit", "Sub-details": {"More": "stuff", "EvenMore": "things"}},
+                          update_info={"latest_version": "3.9.10", "package_manager_name": "apt",
+                                       "update_command": "sudo apt upgrade python3", "is_update_available": True},
+                          issues=[ScanIssue("Path not in system PATH", "Warning", "python_3.9_python.exe")]),
+        DetectedComponent(id="git_2.30_git.exe", name="Git", category="VCS", version="2.30.1",
+                          path="/usr/bin/git", executable_path="/usr/bin/git", details={"user.name": "Test User"})
+    ]
+    env_vars = [
+        EnvironmentVariableInfo(name="PATH", value="/usr/bin:/bin:/usr/local/bin", issues=[
+            ScanIssue("Entry '/usr/games' not found", "Warning", related_path="/usr/games")]),
+        EnvironmentVariableInfo(name="JAVA_HOME", value="/opt/jdk-11", issues=[
+            ScanIssue("Path /opt/jdk-11 does not exist", "Critical", related_path="/opt/jdk-11")]),
+        EnvironmentVariableInfo(name="API_KEY_SECRET", value="supersecretvalue")
+    ]
+    issues = [
+        ScanIssue("Global issue example", "Critical", category="System"),
+        ScanIssue("Another warning", "Warning", component_id="python_3.9_python.exe", category="Configuration")
+>>>>>>> pr7-branch
     ]
 
     reporter = ReportGenerator(comps, env_vars, issues)
 
     # Test exports
     output_dir = "test_reports"
+<<<<<<< HEAD
     import os
+=======
+    # import os # Already imported for __main__
+>>>>>>> pr7-branch
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
