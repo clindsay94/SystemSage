@@ -30,9 +30,9 @@ from threading import Thread
 import traceback
 import sys
 import customtkinter
-from customtkinter import CTkTable # Import CTkTable for table widgets
-from customtkinter import CTkFileDialog # Import CTkFileDialog
-from customtkinter import CTkMessagebox # Import CTkMessagebox
+from customtkinter import CTkTable # type: ignore # Import CTkTable for table widgets
+from customtkinter import CTkFileDialog # type: ignore # Import CTkFileDialog
+from customtkinter import CTkMessagebox  # type: ignore # Import CTkMessagebox
 
 
 
@@ -41,7 +41,7 @@ def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
 
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS # type: ignore
     except Exception:
         base_path = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(base_path, relative_path)
