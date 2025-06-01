@@ -7,3 +7,7 @@ CTkTable>=0.1.0       # Required for displaying tabular data in the GUI
 # which can be useful for accurate update checks in the DevEnvAudit module.
 # While DevEnvAudit has a fallback if it's not installed, installing it is recommended.
 packaging>=21.3
+ipykernel>=6.9.5  # Required for Jupyter notebook support
+ipython>=9.3.0  # Provides an enhanced interactive Python shell
+CtkFileDialog>=0.1.0  # For file dialog support in the GUI
+CTkMessageBox>=0.1.0  # For message box support in the GUI
