@@ -30,10 +30,9 @@ from threading import Thread
 import traceback
 import sys
 import customtkinter
-from customtkinter import CTkTable # type: ignore # Import CTkTable for table widgets
-from customtkinter import CTkFileDialog # type: ignore # Import CTkFileDialog
-from customtkinter import CTkMessagebox  # type: ignore # Import CTkMessagebox
-
+from CTkTable import CTkTable
+from customtkinter import CTkFileDialog #type: ignore
+from customtkinter import CTkMessagebox #type: ignore
 
 
 # --- Helper function for PyInstaller resource path ---
