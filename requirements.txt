@@ -9,5 +9,5 @@ CTkTable>=0.1.0       # Required for displaying tabular data in the GUI
 packaging>=21.3
 ipykernel>=6.9.5  # Required for Jupyter notebook support
 ipython>=9.3.0  # Provides an enhanced interactive Python shell
-CtkFileDialog>=0.1.0  # For file dialog support in the GUI
-CTkMessageBox>=0.1.0  # For message box support in the GUI
+FileDialog>=0.1.0  # For file dialog support in the GUI
+CTkInputDialog>=0.0.4

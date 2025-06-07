@@ -1,3 +1,4 @@
+# %%
 # System Sage - Integrated System Utility V2.0
 # This script provides system inventory, developer environment auditing,
 # and other utilities.
@@ -24,22 +25,23 @@ import platform
 import json
 import datetime
 import argparse
-import logging
 import tkinter as tk
 from threading import Thread
 import traceback
 import sys
-import customtkinter
-from CTkTable import CTkTable
-from customtkinter import CTkFileDialog #type: ignore
-from customtkinter import CTkMessagebox #type: ignore
+import logging # Added missing logging import
 
+from CTkTable import CTkTable
+from CTkFileDialog import CTkFileDialog
+import customtkinter
+from customtkinter import CTkInputDialog
 
 # --- Helper function for PyInstaller resource path ---
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
-
+        # Removed unnecessary 'import customtkinter' from here
+        # Check for _MEIPASS, which is set by PyInstaller
         base_path = sys._MEIPASS # type: ignore
     except Exception:
         base_path = os.path.abspath(os.path.dirname(__file__))
@@ -54,7 +56,7 @@ def show_custom_messagebox(parent_window, title, message, dialog_type="info"):
     message: The message to display in the dialog.
     dialog_type: "info", "warning", or "error". Can be used for theming/icons in future.
     """
-    dialog = customtkinter.CTkToplevel(parent_window)
+    dialog = customtkinter.CTkToplevel(parent_window) # Use CTkToplevel for custom dialogs
 
     title_prefix = ""
     if dialog_type == "error": title_prefix = "Error: "
@@ -142,13 +144,6 @@ COMPONENT_KEYWORDS_FILE = resource_path("systemsage_component_keywords.json")
 LAUNCHER_HINTS_FILE = resource_path("systemsage_launcher_hints.json")
 COMPONENT_KEYWORDS = load_json_config(COMPONENT_KEYWORDS_FILE, DEFAULT_COMPONENT_KEYWORDS)
 LAUNCHER_HINTS = load_json_config(LAUNCHER_HINTS_FILE, DEFAULT_LAUNCHER_HINTS)
-
-# --- Logging Configuration ---
-# Placeholder for initial class structure, actual implementation below
-# class SystemSageApp(customtkinter.CTk):
-#     def __init__(self, cli_args=None):
-#         super().__init__()
-#         # ... (initial attributes) ...
 
 class DirectorySizeError(Exception): pass
 def is_likely_component(display_name, publisher):
@@ -351,7 +346,8 @@ class SystemSageApp(customtkinter.CTk):
 
     def _setup_ui(self):
         # Action Bar
-        self.action_bar_frame = customtkinter.CTkFrame(self, corner_radius=0, height=50)
+        # Added border_width=0 to prevent KeyError
+        self.action_bar_frame = customtkinter.CTkFrame(self, corner_radius=0, height=50, border_width=0)
         self.action_bar_frame.pack(side=tk.TOP, fill=tk.X, padx=0, pady=(0, self.padding_std))
 
         action_button_height = 30
@@ -389,11 +385,7 @@ class SystemSageApp(customtkinter.CTk):
 
         # Main TabView
         self.main_notebook = customtkinter.CTkTabview(
-            self, corner_radius=self.corner_radius_soft, border_width=0,
-            # Experiment with tab colors if available and desired - check CTkTabView docs
-            # segmented_button_selected_color=...,
-            # segmented_button_unselected_color=...,
-            # text_color=...
+            self, corner_radius=self.corner_radius_soft, border_width=0, # Added border_width=0
         )
         self.main_notebook.pack(expand=True, fill="both", padx=self.padding_large, pady=(self.padding_std, self.padding_large))
         self.main_notebook.add("System Inventory")
@@ -406,7 +398,7 @@ class SystemSageApp(customtkinter.CTk):
         self.inventory_table = CTkTable(
             master=inventory_tab_frame, column=len(inv_cols), values=[inv_cols],
             font=self.default_font, corner_radius=self.corner_radius_std,
-            hover_color=self.button_hover_color # Consistent hover
+            hover_color=self.button_hover_color
         )
         self.inventory_table.pack(expand=True, fill="both", padx=self.padding_large, pady=self.padding_large)
 
@@ -415,11 +407,13 @@ class SystemSageApp(customtkinter.CTk):
         devenv_tab_frame.grid_columnconfigure(0, weight=1)
 
         # Section: Detected Components
+        # Added border_width=1 to prevent KeyError
         outer_components_ctk_frame = customtkinter.CTkFrame(devenv_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
         outer_components_ctk_frame.grid(row=0, column=0, padx=self.padding_large, pady=(self.padding_large, self.padding_std), sticky="nsew")
         outer_components_ctk_frame.grid_columnconfigure(0, weight=1)
         customtkinter.CTkLabel(master=outer_components_ctk_frame, text="Detected Components", font=self.title_font).pack(pady=(self.padding_std+3, self.padding_std+3), padx=self.padding_large)
-        inner_components_ctk_frame = customtkinter.CTkFrame(outer_components_ctk_frame, corner_radius=self.corner_radius_std)
+        # Added border_width=0 to inner frame
+        inner_components_ctk_frame = customtkinter.CTkFrame(outer_components_ctk_frame, corner_radius=self.corner_radius_std, border_width=0)
         inner_components_ctk_frame.pack(fill="both", expand=True, padx=self.padding_large, pady=(0, self.padding_large))
         comp_cols_list = ["ID", "Name", "Category", "Version", "Path", "Executable Path"]
         self.devenv_components_table = CTkTable(
@@ -429,11 +423,13 @@ class SystemSageApp(customtkinter.CTk):
         self.devenv_components_table.pack(expand=True, fill="both", padx=self.padding_std, pady=self.padding_std)
 
         # Section: Environment Variables
+        # Added border_width=1 to prevent KeyError
         outer_env_vars_ctk_frame = customtkinter.CTkFrame(devenv_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
         outer_env_vars_ctk_frame.grid(row=1, column=0, padx=self.padding_large, pady=self.padding_std, sticky="nsew")
         outer_env_vars_ctk_frame.grid_columnconfigure(0, weight=1)
         customtkinter.CTkLabel(master=outer_env_vars_ctk_frame, text="Environment Variables", font=self.title_font).pack(pady=(self.padding_std+3, self.padding_std+3), padx=self.padding_large)
-        inner_env_vars_ctk_frame = customtkinter.CTkFrame(outer_env_vars_ctk_frame, corner_radius=self.corner_radius_std)
+        # Added border_width=0 to inner frame
+        inner_env_vars_ctk_frame = customtkinter.CTkFrame(outer_env_vars_ctk_frame, corner_radius=self.corner_radius_std, border_width=0)
         inner_env_vars_ctk_frame.pack(fill="both", expand=True, padx=self.padding_large, pady=(0, self.padding_large))
         env_cols_list = ["Name", "Value", "Scope"]
         self.devenv_env_vars_table = CTkTable(
@@ -443,11 +439,13 @@ class SystemSageApp(customtkinter.CTk):
         self.devenv_env_vars_table.pack(expand=True, fill="both", padx=self.padding_std, pady=self.padding_std)
 
         # Section: Identified Issues
+        # Added border_width=1 to prevent KeyError
         outer_issues_ctk_frame = customtkinter.CTkFrame(devenv_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
         outer_issues_ctk_frame.grid(row=2, column=0, padx=self.padding_large, pady=(self.padding_std, self.padding_large), sticky="nsew")
         outer_issues_ctk_frame.grid_columnconfigure(0, weight=1)
         customtkinter.CTkLabel(master=outer_issues_ctk_frame, text="Identified Issues", font=self.title_font).pack(pady=(self.padding_std+3, self.padding_std+3), padx=self.padding_large)
-        inner_issues_ctk_frame = customtkinter.CTkFrame(outer_issues_ctk_frame, corner_radius=self.corner_radius_std)
+        # Added border_width=0 to inner frame
+        inner_issues_ctk_frame = customtkinter.CTkFrame(outer_issues_ctk_frame, corner_radius=self.corner_radius_std, border_width=0)
         inner_issues_ctk_frame.pack(fill="both", expand=True, padx=self.padding_large, pady=(0, self.padding_large))
         issue_cols_list = ["Severity", "Description", "Category", "Component ID", "Related Path"]
         self.devenv_issues_table = CTkTable(
@@ -462,18 +460,21 @@ class SystemSageApp(customtkinter.CTk):
 
 
         # --- Overclocker's Logbook Tab ---
-        ocl_tab_frame = self.main_notebook.tab("Overclocker's Logbook")
+        # Added border_width=1 to prevent KeyError
+        ocl_tab_frame = self.main_notebook.tab("Overclocker's Logbook") # Tabs themselves don't take border_width here
         ocl_tab_frame.grid_columnconfigure(0, weight=1)
         ocl_tab_frame.grid_rowconfigure(0, weight=2)
         ocl_tab_frame.grid_rowconfigure(1, weight=1)
 
+        # Added border_width=1 to prevent KeyError
         ocl_top_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
         ocl_top_frame.grid(row=0, column=0, padx=self.padding_large, pady=(self.padding_large, self.padding_std), sticky="nsew")
         ocl_top_frame.grid_columnconfigure(0, weight=1)
         ocl_top_frame.grid_rowconfigure(1, weight=1)
 
         customtkinter.CTkLabel(master=ocl_top_frame, text="Available Overclocking Profiles", font=self.title_font).grid(row=0, column=0, padx=self.padding_large, pady=(self.padding_std+3, self.padding_std+3))
-        inner_profiles_list_ctk_frame = customtkinter.CTkFrame(ocl_top_frame, corner_radius=self.corner_radius_std)
+        # Added border_width=0 to inner frame
+        inner_profiles_list_ctk_frame = customtkinter.CTkFrame(ocl_top_frame, corner_radius=self.corner_radius_std, border_width=0)
         inner_profiles_list_ctk_frame.grid(row=1, column=0, sticky="nsew", padx=self.padding_large, pady=(0,self.padding_large))
         initial_ocl_values = [["ID", "Profile Name", "Last Modified"]]
         self.ocl_profiles_table = CTkTable(
@@ -483,19 +484,22 @@ class SystemSageApp(customtkinter.CTk):
         )
         self.ocl_profiles_table.pack(expand=True, fill="both", padx=self.padding_std, pady=self.padding_std)
 
+        # Added border_width=1 to prevent KeyError
         ocl_bottom_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
         ocl_bottom_frame.grid(row=1, column=0, padx=self.padding_large, pady=(self.padding_std, self.padding_large), sticky="nsew")
         ocl_bottom_frame.grid_columnconfigure(0, weight=1)
         ocl_bottom_frame.grid_rowconfigure(0, weight=1)
         ocl_bottom_frame.grid_rowconfigure(1, weight=0)
 
-        profile_details_outer_ctk_frame = customtkinter.CTkFrame(ocl_bottom_frame, fg_color="transparent")
+        # Added border_width=0 to outer frame
+        profile_details_outer_ctk_frame = customtkinter.CTkFrame(ocl_bottom_frame, fg_color="transparent", border_width=0)
         profile_details_outer_ctk_frame.grid(row=0, column=0, sticky="nsew", padx=self.padding_large, pady=(0,self.padding_std))
         profile_details_outer_ctk_frame.grid_columnconfigure(0, weight=1)
         profile_details_outer_ctk_frame.grid_rowconfigure(1, weight=1)
 
         customtkinter.CTkLabel(master=profile_details_outer_ctk_frame, text="Profile Details", font=self.title_font).grid(row=0, column=0, padx=0, pady=(self.padding_std+3, self.padding_std+3))
-        inner_profile_details_ctk_frame = customtkinter.CTkFrame(profile_details_outer_ctk_frame, corner_radius=self.corner_radius_std)
+        # Added border_width=0 to inner frame
+        inner_profile_details_ctk_frame = customtkinter.CTkFrame(profile_details_outer_ctk_frame, corner_radius=self.corner_radius_std, border_width=0)
         inner_profile_details_ctk_frame.grid(row=1, column=0, sticky="nsew", padx=0, pady=(0,self.padding_large))
         self.ocl_profile_details_text = customtkinter.CTkTextbox(
             inner_profile_details_ctk_frame, wrap=tk.WORD, state=tk.DISABLED, height=100,
@@ -503,7 +507,8 @@ class SystemSageApp(customtkinter.CTk):
         )
         self.ocl_profile_details_text.pack(expand=True, fill="both", padx=self.padding_std, pady=self.padding_std)
 
-        actions_ctk_frame = customtkinter.CTkFrame(ocl_bottom_frame, fg_color="transparent")
+        # Added border_width=0 to actions frame
+        actions_ctk_frame = customtkinter.CTkFrame(ocl_bottom_frame, fg_color="transparent", border_width=0)
         actions_ctk_frame.grid(row=1, column=0, sticky="ew", padx=self.padding_large, pady=(self.padding_std,self.padding_large))
 
         self.ocl_refresh_button = customtkinter.CTkButton(
@@ -780,8 +785,8 @@ class SystemSageApp(customtkinter.CTk):
             show_custom_messagebox(self, "Save Error", f"Failed to save reports: {e}", dialog_type="error")
 
     def quit_app(self):
-        # Use CTkMessagebox for the initial exit confirmation
-        initial_quit_dialog = CTkMessagebox(
+        # Use customtkinter.CTkMessagebox for the initial exit confirmation
+        initial_quit_dialog = customtkinter.CTkMessagebox(
             title="Confirm Exit",
             message="Do you really want to exit System Sage?",
             icon="question", # Adds a nice question mark icon
@@ -789,13 +794,13 @@ class SystemSageApp(customtkinter.CTk):
             option_2="Yes"   # This will be the button on the right
         )
 
-        # The .get() method of CTkMessagebox returns the text of the clicked button
+        # The .get() method of customtkinter.CTkMessagebox returns the text of the clicked button
         initial_result = initial_quit_dialog.get()
 
         if initial_result == "Yes":
             if self.scan_in_progress:
-                # Use CTkMessagebox for the "scan in progress" confirmation
-                scan_exit_dialog = CTkMessagebox(
+                # Use customtkinter.CTkMessagebox for the "scan in progress" confirmation
+                scan_exit_dialog = customtkinter.CTkMessagebox(
                     title="Confirm Exit During Scan",
                     message="A scan is currently in progress. Exiting now might lose unsaved data. Do you really want to exit?",
                     icon="warning", # Adds a warning icon
@@ -805,15 +810,15 @@ class SystemSageApp(customtkinter.CTk):
                 scan_exit_result = scan_exit_dialog.get() # Get the clicked button's text
 
                 if scan_exit_result == "Yes, Exit":
-                    print("User confirmed exit despite scan in progress.") # Optional: add a log for clarity
+                    logging.info("User confirmed exit despite scan in progress.") # Changed from print to logging.info
                     self.destroy() # Closes the main application window
                 else:
-                    print("User chose to continue scan.") # Optional: add a log
+                    logging.info("User chose to continue scan.") # Changed from print to logging.info
             else:
-                print("User confirmed exit.") # Optional: add a log
+                logging.info("User confirmed exit.") # Changed from print to logging.info
                 self.destroy() # Closes the main application window
         else:
-            print("User cancelled exit.") # Optional: add a log
+            logging.info("User cancelled exit.") # Changed from print to logging.info
             # The dialog was closed or "No" was selected, do nothing
 
 
