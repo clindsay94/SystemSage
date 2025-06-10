@@ -1,6 +1,8 @@
 # Core Dependencies for System Sage
-customtkinter>=0.4.0  # Used for the modern GUI elements
-CTkTable>=0.1.0       # Required for displaying tabular data in the GUI
+customtkinter>=5.2.2  # Used for the modern GUI elements (Major update from 0.4.0)
+CTkTable>=1.1       # Required for displaying tabular data in the GUI (Major update from 0.1.0)
+# CTkFileDialog is a local library from https://github.com/limafresh/CTkFileDialog
+# CTkInputDialog is part of customtkinter
 
 # Optional/Recommended Dependencies
 # The 'packaging' library provides robust version parsing and comparison,
@@ -9,5 +11,3 @@ CTkTable>=0.1.0       # Required for displaying tabular data in the GUI
 packaging>=21.3
 ipykernel>=6.9.5  # Required for Jupyter notebook support
 ipython>=9.3.0  # Provides an enhanced interactive Python shell
-FileDialog>=0.1.0  # For file dialog support in the GUI
-CTkInputDialog>=0.0.4
