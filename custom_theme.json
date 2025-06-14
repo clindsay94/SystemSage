@@ -1,69 +1,242 @@
 {
+  "CTkFont": {
+    "family": "Roboto",
+    "size": 14,
+    "weight": "normal"
+  },
   "CTk": {
-    "fg_color": ["#ECEFF1", "#263238"]
+    "fg_color": [
+      "gray92",
+      "gray14"
+    ]
   },
   "CTkFrame": {
     "fg_color": ["#FFFFFF", "#37474F"],
     "top_fg_color": ["#FAFAFA", "#2C3A41"],
-    "border_color": ["#D0D0D0", "#2F3C42"]
+    "border_color": ["#D0D0D0", "#2F3C42"],
+    "corner_radius": 6,
+    "border_width": 0
   },
   "CTkButton": {
-    "fg_color": ["#5E35B1", "#7E57C2"],
-    "hover_color": ["#512DA8", "#673AB7"],
-    "text_color": ["#FFFFFF", "#FFFFFF"],
+    "fg_color": [
+      "#5E35B1",
+      "#7E57C2"
+    ],
+    "hover_color": [
+      "#512DA8",
+      "#673AB7"
+    ],
+    "text_color": [
+      "#FFFFFF",
+      "#FFFFFF"
+    ],
     "border_width": 0,
-    "corner_radius": 6
+    "corner_radius": 6,
+    "border_color": [
+      "#D0D0D0",
+      "#2F3C42"
+    ],
+    "text_color_disabled": [
+      "#B0BEC5",
+      "#9E9E9E"
+    ]
   },
   "CTkLabel": {
-    "text_color": ["#212121", "#E0E0E0"]
+    "fg_color": "transparent",
+    "text_color": [
+      "#212121",
+      "#E0E0E0"
+    ],
+    "corner_radius": 0
   },
   "CTkEntry": {
-    "fg_color": ["#F5F5F5", "#455A64"],
-    "border_color": ["#B0BEC5", "#546E7A"],
-    "text_color": ["#212121", "#E0E0E0"],
-    "corner_radius": 6
+    "fg_color": [
+      "#F5F5F5",
+      "#455A64"
+    ],
+    "border_color": [
+      "#B0BEC5",
+      "#546E7A"
+    ],
+    "text_color": [
+      "#212121",
+      "#E0E0E0"
+    ],
+    "corner_radius": 6,
+    "border_width": 2,
+    "placeholder_text_color": ["gray52", "gray62"]
   },
   "CTkTextbox": {
-    "fg_color": ["#F5F5F5", "#455A64"],
-    "border_color": ["#B0BEC5", "#546E7A"],
-    "text_color": ["#212121", "#E0E0E0"],
-    "corner_radius": 6
+    "fg_color": [
+      "#F5F5F5",
+      "#455A64"
+    ],
+    "border_color": [
+      "#B0BEC5",
+      "#546E7A"
+    ],
+    "text_color": [
+      "#212121",
+      "#E0E0E0"
+    ],
+    "corner_radius": 6,
+    "border_width": 1,
+    "scrollbar_button_color": [ "#B0BEC5", "#546E7A" ],
+    "scrollbar_button_hover_color": [ "#90A4AE", "#607D8B" ]
   },
   "CTkTabview": {
-    "fg_color": ["#ECEFF1", "#263238"],
-    "tab_fg_color": ["#FFFFFF", "#37474F"],
-    "segmented_button_fg_color": ["#FFFFFF", "#37474F"],
-    "segmented_button_selected_color": ["#B39DDB", "#7E57C2"],
-    "segmented_button_unselected_color": ["#E0E0E0", "#4A5A64"],
-    "segmented_button_selected_hover_color": ["#A38DD0", "#6F47B2"],
-    "text_color": ["#212121", "#E0E0E0"],
-    "border_color": ["#D0D0D0", "#2F3C42"],
-    "corner_radius": 6
+    "fg_color": [
+      "#ECEFF1",
+      "#263238"
+    ],
+    "tab_fg_color": [
+      "#FFFFFF",
+      "#37474F"
+    ],
+    "segmented_button_fg_color": [
+      "#FFFFFF",
+      "#37474F"
+    ],
+    "segmented_button_selected_color": [
+      "#B39DDB",
+      "#7E57C2"
+    ],
+    "segmented_button_unselected_color": [
+      "#E0E0E0",
+      "#4A5A64"
+    ],
+    "segmented_button_selected_hover_color": [
+      "#A38DD0",
+      "#6F47B2"
+    ],
+    "text_color": [
+      "#212121",
+      "#E0E0E0"
+    ],
+    "border_color": [
+      "#D0D0D0",
+      "#2F3C42"
+    ],
+    "corner_radius": 6,
+    "border_width": 1
+  },
+  "CTkSegmentedButton": {
+    "fg_color": [
+      "#FFFFFF",
+      "#37474F"
+    ],
+    "selected_color": [
+      "#B39DDB",
+      "#7E57C2"
+    ],
+    "unselected_color": [
+      "#E0E0E0",
+      "#4A5A64"
+    ],
+    "selected_hover_color": [
+      "#A38DD0",
+      "#6F47B2"
+    ],
+    "unselected_hover_color": [
+      "#D0D0D0",
+      "#5A6A74"
+    ],
+    "text_color": [
+      "#212121",
+      "#E0E0E0"
+    ],
+    "text_color_disabled": [
+      "#B0BEC5",
+      "#9E9E9E"
+    ],
+    "corner_radius": 6,
+    "border_width": 0,
+    "border_color": [
+      "#D0D0D0",
+      "#2F3C42"
+    ]
   },
   "CTkTable": {
-    "fg_color": ["#FFFFFF", "#37474F"],
-    "header_fg_color": ["#EDE7F6", "#4A0072"],
-    "hover_color": ["#E8EAF6", "#4A5A64"],
-    "text_color": ["#212121", "#E0E0E0"],
-    "header_text_color": ["#5E35B1", "#EDE7F6"],
-    "corner_radius": 6
+    "fg_color": [
+      "#FFFFFF",
+      "#37474F"
+    ],
+    "header_fg_color": [
+      "#EDE7F6",
+      "#4A0072"
+    ],
+    "hover_color": [
+      "#E8EAF6",
+      "#4A5A64"
+    ],
+    "text_color": [
+      "#212121",
+      "#E0E0E0"
+    ],
+    "header_text_color": [
+      "#5E35B1",
+      "#EDE7F6"
+    ],
+    "corner_radius": 6,
+    "border_width": 1
   },
   "CTkScrollbar": {
-    "fg_color": ["#CFD8DC", "#455A64"],
-    "button_color": ["#B0BEC5", "#546E7A"],
-    "button_hover_color": ["#90A4AE", "#607D8B"]
+    "fg_color": [
+      "#CFD8DC",
+      "#455A64"
+    ],
+    "button_color": [
+      "#B0BEC5",
+      "#546E7A"
+    ],
+    "button_hover_color": [
+      "#90A4AE",
+      "#607D8B"
+    ],
+    "corner_radius": 8,
+    "border_width": 0
   },
   "CTkDialog": {
-    "fg_color": ["#FAFAFA", "#2C3A41"],
-    "button_fg_color": ["#5E35B1", "#7E57C2"],
-    "button_hover_color": ["#512DA8", "#673AB7"],
-    "button_text_color": ["#FFFFFF", "#FFFFFF"],
-    "entry_fg_color": ["#F5F5F5", "#455A64"],
-    "entry_border_color": ["#B0BEC5", "#546E7A"],
-    "entry_text_color": ["#212121", "#E0E0E0"],
-    "title_text_color": ["#212121", "#E0E0E0"]
+    "fg_color": [
+      "#FAFAFA",
+      "#2C3A41"
+    ],
+    "button_fg_color": [
+      "#5E35B1",
+      "#7E57C2"
+    ],
+    "button_hover_color": [
+      "#512DA8",
+      "#673AB7"
+    ],
+    "button_text_color": [
+      "#FFFFFF",
+      "#FFFFFF"
+    ],
+    "entry_fg_color": [
+      "#F5F5F5",
+      "#455A64"
+    ],
+    "entry_border_color": [
+      "#B0BEC5",
+      "#546E7A"
+    ],
+    "entry_text_color": [
+      "#212121",
+      "#E0E0E0"
+    ],
+    "title_text_color": [
+      "#212121",
+      "#E0E0E0"
+    ]
   },
   "CTkInputDialog": {
-     "fg_color": ["#FAFAFA", "#2C3A41"]
+    "fg_color": [
+      "#FAFAFA",
+      "#2C3A41"
+    ]
+  },
+  "CTkToplevel": {
+    "fg_color": ["gray86", "gray17"]
   }
 }
