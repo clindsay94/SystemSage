@@ -4,7 +4,7 @@
 # These packages are required to run the basic functionality of SystemSage.
 customtkinter>=5.2.2
 CTkTable>=1.1
-tkdnd >=2.9.5
+python-tkdnd>=0.2.1
 tkinterdnd2>=0.3.0
 packaging>=21.3
 Pillow>=9.4.0
