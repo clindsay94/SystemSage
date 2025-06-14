@@ -623,6 +623,27 @@ class SystemSageApp(customtkinter.CTk):
             logging.error(f"Error in system inventory thread: {e}\n{traceback.format_exc()}")
             self.after(0, self.inventory_scan_error, e)
 
+    def save_system_inventory_report(self, software_list):
+        output_dir = "output_data/system_inventory/" 
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+            filename = f"system_inventory_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
+            full_path = os.path.join(output_dir, filename)
+
+            # Prepare data for JSON dump. software_list is a list of dictionaries.
+            # We can wrap it for consistency or add metadata.
+            report_data = {
+                "reportTime": datetime.datetime.now().isoformat(),
+                "systemInventory": software_list
+            }
+
+            with open(full_path, 'w', encoding='utf-8') as f:
+                json.dump(report_data, f, ensure_ascii=False, indent=4)
+            
+            logging.info(f"System inventory report successfully saved to {full_path}")
+
+        except Exception as e:
+            logging.error(f"Failed to save system inventory report to {output_dir}: {e}", exc_info=True)
     def finalize_scan_ui_state(self):
         self.scan_in_progress = False
         self._update_action_buttons_state(customtkinter.NORMAL)
@@ -742,7 +763,7 @@ class SystemSageApp(customtkinter.CTk):
             full_path = os.path.join(output_dir, filename)
 
             # Instantiate ReportGenerator
-            report_generator = ReportGenerator(components=components, env_vars=env_vars, issues=issues)
+            report_generator = ReportGenerator(detected_components=components, environment_variables=env_vars, issues=issues)
 
             # Export to JSON
             report_generator.export_to_json(full_path) # ReportGenerator's method already logs success/failure detail
@@ -889,11 +910,12 @@ class SystemSageApp(customtkinter.CTk):
 
         # 4. Call ocl_api.create_new_profile
         success = False
+        profile_id = None  # Initialize profile_id to ensure it's always bound
         try:
             # Assuming initial_logs can be a simple creation message or an empty list if settings are the primary focus
             initial_logs = [f"Profile '{profile_name}' created with {len(initial_settings)} initial settings."]
             if not initial_settings:
-                 initial_logs = ["Profile created with no initial settings."]
+                initial_logs = ["Profile created with no initial settings."]
 
             profile_id = ocl_api.create_new_profile(
                 name=profile_name,
@@ -912,12 +934,38 @@ class SystemSageApp(customtkinter.CTk):
         except Exception as e:
             show_custom_messagebox(self, "OCL API Error", f"Error saving profile '{profile_name}': {e}", dialog_type="error")
             logging.error(f"OCL save error for profile '{profile_name}': {e}", exc_info=True)
-
         if self.status_bar:
             status_message = f"Save new OCL profile '{profile_name}' attempt. Success: {success}"
-            if success and 'profile_id' in locals():
+            if success: # If success is True, profile_id is guaranteed to be non-None and hold the ID
                 status_message += f" (ID: {profile_id})"
             self.status_bar.configure(text=status_message)
+            self.status_bar.configure(text=status_message)
+
+    def _reselect_ocl_profile_after_update(self):
+        """Helper to re-select the current OCL profile in the table and update details."""
+        row_to_select = 0  # Default to first data row if ID not found or None
+        if self.selected_ocl_profile_id is not None and \
+           self.ocl_profiles_table and \
+           hasattr(self.ocl_profiles_table, 'values') and \
+           len(self.ocl_profiles_table.values) > 1: # Check if there are data rows
+            try:
+                # Iterate through data rows (skip header at index 0)
+                for i, row_data in enumerate(self.ocl_profiles_table.values[1:]):
+                    # Ensure row_data is not empty and has at least one element (the ID)
+                    if row_data and len(row_data) > 0 and str(row_data[0]) == str(self.selected_ocl_profile_id):
+                        row_to_select = i  # i is the 0-based index of the data row
+                        logging.info(f"Found profile ID {self.selected_ocl_profile_id} at data row index {i} for reselection.")
+                        break
+                else: # Loop completed without break
+                    logging.warning(f"Profile ID {self.selected_ocl_profile_id} not found in table for reselection. Defaulting to row 0.")
+            except Exception as e_reselect:
+                logging.error(f"Error finding row for reselection of profile ID {self.selected_ocl_profile_id}: {e_reselect}")
+        elif self.selected_ocl_profile_id is None:
+            logging.info("No profile ID selected; reselecting default row 0.")
+        else:
+            logging.info("OCL profiles table not ready or empty; reselecting default row 0.")
+        
+        self.on_ocl_profile_select_ctktable({'row': row_to_select})
 
     def edit_selected_ocl_profile(self):
         if self.selected_ocl_profile_id is None:
@@ -940,7 +988,7 @@ class SystemSageApp(customtkinter.CTk):
         current_settings = details.get('settings', [])
 
         # Edit Name
-        name_dialog = customtkinter.CTkInputDialog(text="Enter new Profile Name:", title="Edit Profile Name", entry_text=current_name)
+        name_dialog = customtkinter.CTkInputDialog(text=f"Enter new Profile Name.\nCurrent: {current_name}", title="Edit Profile Name")
         new_name = name_dialog.get_input()
         if new_name is None: # User cancelled
             show_custom_messagebox(self, "Cancelled", "Profile edit cancelled during name input.", dialog_type="info")
@@ -953,7 +1001,7 @@ class SystemSageApp(customtkinter.CTk):
 
 
         # Edit Description
-        desc_dialog = customtkinter.CTkInputDialog(text="Enter new Profile Description:", title="Edit Profile Description", entry_text=current_description)
+        desc_dialog = customtkinter.CTkInputDialog(text=f"Enter new Profile Description.\nCurrent: {current_description}", title="Edit Profile Description")
         new_description = desc_dialog.get_input()
         if new_description is None: # User cancelled
             new_description = current_description # Keep original if cancelled
@@ -988,7 +1036,7 @@ class SystemSageApp(customtkinter.CTk):
 
             action_lower = action.lower()
             if action_lower == 'update':
-                new_value_dialog = customtkinter.CTkInputDialog(text="Enter new Setting Value:", title="Update Setting Value", entry_text=str(setting.get('setting_value')))
+                new_value_dialog = customtkinter.CTkInputDialog(text=f"Enter new Setting Value.\nCurrent: {str(setting.get('setting_value'))}", title="Update Setting Value")
                 new_value = new_value_dialog.get_input()
                 if new_value is not None: # Allow empty string as a value
                     settings_to_update.append({'id': setting_id, 'setting_value': new_value})
@@ -1016,9 +1064,8 @@ class SystemSageApp(customtkinter.CTk):
             if not s_name: break
             value_dialog = customtkinter.CTkInputDialog(text="Enter New Setting Value:", title="New Setting - Value")
             s_val = value_dialog.get_input()
-            if s_val is None: break # Explicit cancel
-
-            type_dialog = customtkinter.CTkInputDialog(text="Enter Value Type (str, int, float, bool):", title="New Setting - Type")
+            if not s_val: break
+            type_dialog = customtkinter.CTkInputDialog(text="Enter New Setting Type:", title="New Setting - Type")
             s_type = type_dialog.get_input()
             if not s_type: s_type = "str"
 
@@ -1035,13 +1082,13 @@ class SystemSageApp(customtkinter.CTk):
                 settings_to_add=settings_to_add,
                 settings_to_update=settings_to_update,
                 setting_ids_to_delete=setting_ids_to_delete
-            )
+             )
             if update_success:
                 show_custom_messagebox(self, "Success", f"OCL Profile ID {self.selected_ocl_profile_id} updated successfully.", dialog_type="info")
                 logging.info(f"OCL Profile ID {self.selected_ocl_profile_id} updated. Name: '{new_name}', Desc: '{new_description}', Added: {len(settings_to_add)}, Updated: {len(settings_to_update)}, Deleted: {len(setting_ids_to_delete)}")
                 self.refresh_ocl_profiles_list() # Refresh list and details display
                 # Explicitly re-select and show details for the updated profile
-                self.after(100, lambda: self.on_ocl_profile_select_ctktable({'row': self.ocl_profiles_table.get_row_index(self.selected_ocl_profile_id, 0)} if self.selected_ocl_profile_id is not None else {'row':0} ))
+                self.after(100, self._reselect_ocl_profile_after_update)
 
             else:
                 show_custom_messagebox(self, "Error", f"Failed to update OCL profile ID {self.selected_ocl_profile_id}. API returned failure.", dialog_type="error")
@@ -1058,10 +1105,10 @@ class SystemSageApp(customtkinter.CTk):
         if self.selected_ocl_profile_id is None:
             show_custom_messagebox(self, "No Profile Selected", "Please select a profile to add a log to.", dialog_type="warning")
             if self.status_bar: self.status_bar.configure(text="Add Log: No profile selected.")
-            return
+             return
 
         profile_id = self.selected_ocl_profile_id
-        log_text_to_add = None
+        log_text_to_add = None # Initialize here
         log_type_dialog = customtkinter.CTkInputDialog(text="What type of log? (note/stability)", title="Select Log Type")
         log_type = log_type_dialog.get_input()
 
@@ -1112,26 +1159,27 @@ class SystemSageApp(customtkinter.CTk):
             if self.status_bar: self.status_bar.configure(text=f"Add Log: Invalid type '{log_type}'.")
             return
 
-        if log_text_to_add is not None:
-            success = False
-            try:
-                log_id = ocl_api.add_log_to_profile(profile_id=profile_id, log_text=log_text_to_add)
-                success = log_id is not None
-                if success:
-                    show_custom_messagebox(self, "Log Added", f"Log entry added to OCL profile ID {profile_id} (Log ID: {log_id}).", dialog_type="info")
-                    logging.info(f"Log entry of type '{log_type_lower}' added to OCL profile ID {profile_id}. Log: '{log_text_to_add}'")
-                    self.refresh_ocl_profiles_list()
-                    # Re-select and show details for the updated profile
-                    self.after(100, lambda: self.on_ocl_profile_select_ctktable({'row': self.ocl_profiles_table.get_row_index(self.selected_ocl_profile_id, 0)} if self.selected_ocl_profile_id is not None else {'row':0} ))
-                else:
-                    show_custom_messagebox(self, "Error", f"Failed to add log to OCL profile ID {profile_id}. API returned no log ID.", dialog_type="error")
-                    logging.error(f"Failed to add log to OCL profile ID {profile_id}. Log text: {log_text_to_add}")
-            except Exception as e:
-                show_custom_messagebox(self, "OCL API Error", f"Error adding log to profile ID {profile_id}: {e}", dialog_type="error")
-                logging.error(f"OCL API error adding log to profile ID {profile_id}: {e}", exc_info=True)
+ # Check if log_text_to_add was successfully populated by the log type branches
+    if log_text_to_add is not None:
+        success = False
+        try:
+            log_id = ocl_api.add_log_to_profile(profile_id=profile_id, log_text=log_text_to_add)
+            success = log_id is not None
+            if success:
+                show_custom_messagebox(self, "Log Added", f"Log entry added to OCL profile ID {profile_id} (Log ID: {log_id}).", dialog_type="info")
+                logging.info(f"Log entry of type '{log_type_lower}' added to OCL profile ID {profile_id}. Log: '{log_text_to_add}'")
+                self.refresh_ocl_profiles_list()
+                # Re-select and show details for the updated profile
+                self.after(100, self._reselect_ocl_profile_after_update)
+            else:
+                show_custom_messagebox(self, "Error", f"Failed to add log to OCL profile ID {profile_id}. API returned no log ID.", dialog_type="error")
+                logging.error(f"Failed to add log to OCL profile ID {profile_id}. Log text: {log_text_to_add}")
+        except Exception as e:
+            show_custom_messagebox(self, "OCL API Error", f"Error adding log to profile ID {profile_id}: {e}", dialog_type="error")
+            logging.error(f"OCL API error adding log to profile ID {profile_id}: {e}", exc_info=True)
 
-            if self.status_bar:
-                self.status_bar.configure(text=f"Add Log to OCL profile ID {profile_id} (Type: {log_type_lower}). Success: {success}")
+        if self.status_bar:
+                   self.status_bar.configure(text=f"Add Log to OCL profile ID {profile_id} (Type: {log_type_lower}). Success: {success}")
         else:
             # This case should ideally be caught earlier, e.g. if a note was cancelled.
             logging.warning(f"Add Log: log_text_to_add was None for profile ID {profile_id}, type {log_type_lower}. This might indicate an issue in dialog flow.")
