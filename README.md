@@ -1,4 +1,4 @@
-# System Sage - V2.0
+# System Sage - V2.5
 
 **Your intelligent PC software inventory, developer environment, and overclocking logbook analysis tool.**
 
