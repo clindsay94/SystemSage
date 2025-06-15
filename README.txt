@@ -23,7 +23,7 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
     *   Reports are saved via a GUI menu option, allowing the user to choose the output directory.
 *   **Externalized Configuration:**
     *   Component detection keywords are configurable via `systemsage_component_keywords.json`.
-    *   Game launcher hints are configurable via `systemsage_launcher_hints.json`.
+    *   Game launcher hints are configurable via `systemsage_software_hints.json`.
 *   **Error Handling:** Includes error handling for registry access, file operations, and scan processes.
 
 
@@ -35,7 +35,7 @@ System Sage can be run via its command-line interface or its new graphical user 
 
     *   Python 3.x installed on your Windows system (Tkinter support is usually included).
     *   The script `SystemSageV1.2.py` (or the latest version) and the `devenvaudit_src` subdirectory with its contents.
-    *   Configuration files: `systemsage_component_keywords.json` and `systemsage_launcher_hints.json` (defaults are used if missing).
+    *   Configuration files: `systemsage_component_keywords.json` and `systemsage_software_hints.json` (defaults are used if missing).
 
 2.  **Open a Command Prompt or PowerShell.**
 

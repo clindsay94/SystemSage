@@ -33,7 +33,7 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
   * Generate comprehensive JSON and Markdown reports via the GUI ("File" > "Save Combined Report").
   * Reports include full data from System Inventory and Developer Environment Audit scans.
 * **Externalized Configuration:**
-  * SystemSage keywords/hints: `systemsage_component_keywords.json`, `systemsage_launcher_hints.json`.
+  * SystemSage keywords/hints: `systemsage_component_keywords.json`, `systemsage_software_hints.json`.
   * DevEnvAudit settings: `devenvaudit_src/devenvaudit_config.json`, `devenvaudit_src/tools_database.json`, `devenvaudit_src/software categorization database.json`.
   * AI Core (future): Will include configuration for model paths, parameters, etc.
 * **Error Handling:** Includes error handling for registry access, file operations, and scan processes.
@@ -43,17 +43,20 @@ This project is primarily developed by Connor Lindsay (clindsay94) with Gemini A
 1. **Prerequisites:**
 
     * Python 3.x installed on your Windows system.
-    * `customtkinter` library: `pip install customtkinter`
-    * `CTkTable` library: `pip install CTkTable`
-
-    * The script `SystemSageV2.0.py` (or the latest version).
-    * The `devenvaudit_src/` directory and its contents.
-    * The `ocl_module_src/` directory and its contents.
-    * Relevant JSON configuration files (defaults may apply if some are missing).
+    * Required Python packages installed. You can install them using the provided `requirements.txt` file.
+    * Start a Virtual Environment (optional but recommended):
+    * Download the latest version of System Sage from the [GitHub repository](https://github.com/clindsay94/systemsage).
 
 2. **Open a Command Prompt or PowerShell.**
+
+      ```sh
+      .\venv\Scripts\activate.ps1  # For PowerShell
+      source venv/bin/activate  # For Command Prompt or Bash
+      ```
+
 3. **Navigate to the directory** where SystemSage files are saved.
 4. **Run the script:**
+    * Install required packages: `pip install -r requirements.txt`
 
     ```sh
     python SystemSageV2.0.py [options]
