@@ -2,11 +2,12 @@
 Takes raw data from scans and structures it for GUI display and export.
 Handles formatting for TXT, MD, JSON, and HTML reports.
 """
+
 import json
 import logging
 import html
 from datetime import datetime
-from typing import List, Dict, Any # Add typing imports
+from typing import List  # Add typing imports
 
 # Attempt to import data classes for type hinting
 # These might still show as unresolved in Pylance if the root workspace/PYTHONPATH issue persists
@@ -14,26 +15,37 @@ from .scan_logic import DetectedComponent, EnvironmentVariableInfo, ScanIssue
 
 logger = logging.getLogger(__name__)
 
+
 class ReportGenerator:
-    def __init__(self,
-                 detected_components: List[DetectedComponent],
-                 environment_variables: List[EnvironmentVariableInfo],
-                 issues: List[ScanIssue]):
-        self.detected_components = sorted(detected_components, key=lambda x: (x.category, x.name, x.version))
+    def __init__(
+        self,
+        detected_components: List[DetectedComponent],
+        environment_variables: List[EnvironmentVariableInfo],
+        issues: List[ScanIssue],
+    ):
+        self.detected_components = sorted(
+            detected_components, key=lambda x: (x.category, x.name, x.version)
+        )
         self.environment_variables = sorted(environment_variables, key=lambda x: x.name)
-        self.issues = sorted(issues, key=lambda x: (x.severity, x.category, x.description))
+        self.issues = sorted(
+            issues, key=lambda x: (x.severity, x.category, x.description)
+        )
         self.report_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def _format_component(self, component, format_type="txt"):
         """Formats a single component for different output types."""
         if format_type == "html":
             # Determine Executable/Command
-            exe_command = os.path.basename(component.executable_path or component.path or "N/A")
+            exe_command = os.path.basename(
+                component.executable_path or component.path or "N/A"
+            )
 
             # Details Summary
             details_summary_parts = []
             if component.details:
-                details_summary_parts.append(f"Update: {component.version} -> {component.update_info.get('latest_version', 'N/A')}")
+                details_summary_parts.append(
+                    f"Update: {component.version} -> {component.update_info.get('latest_version', 'N/A')}"
+                )
             if component.issues:
                 details_summary_parts.append(f"Issues: {len(component.issues)}")
             details_summary_str = "; ".join(details_summary_parts)
@@ -56,79 +68,112 @@ class ReportGenerator:
             lines.append(f"- **ID:** `{component.id}`")
             lines.append(f"- **Category:** {component.category}")
             lines.append(f"- **Path:** `{component.path}`")
-            if component.executable_path and component.executable_path != component.path:
+            if (
+                component.executable_path
+                and component.executable_path != component.path
+            ):
                 lines.append(f"- **Executable:** `{component.executable_path}`")
         # Removed old HTML list formatting here
-        else: # txt
+        else:  # txt
             lines.append(f"Tool: {name_version}")
             lines.append(f"  ID: {component.id}")
             lines.append(f"  Category: {component.category}")
             lines.append(f"  Path: {component.path}")
-            if component.executable_path and component.executable_path != component.path:
+            if (
+                component.executable_path
+                and component.executable_path != component.path
+            ):
                 lines.append(f"  Executable: {component.executable_path}")
 
         if component.details:
             # if format_type == "html": lines.append("<li><b>Details:</b><ul>") # Removed for table
             # else: lines.append(f"  Details:") # Keep for TXT/MD
-            if format_type != "html": lines.append(f"  Details:")
+            if format_type != "html":
+                lines.append("  Details:")
 
             for key, value in component.details.items():
-                if format_type == "md": lines.append(f"  - **{key}:** {value}")
+                if format_type == "md":
+                    lines.append(f"  - **{key}:** {value}")
                 # elif format_type == "html": lines.append(f"<li><em>{html.escape(key)}:</em> {html.escape(str(value))}</li>") # Removed for table
-                elif format_type != "html": lines.append(f"    {key}: {value}") # TXT
+                elif format_type != "html":
+                    lines.append(f"    {key}: {value}")  # TXT
             # if format_type == "html": lines.append("</ul></li>") # Removed for table
 
         if component.update_info:
             ui = component.update_info
-            status = "Update Available" if ui.get('is_update_available') else "Up-to-date"
-            if ui.get('latest_version'):
+            status = (
+                "Update Available" if ui.get("is_update_available") else "Up-to-date"
+            )
+            if ui.get("latest_version"):
                 update_line = f"{status}: Installed {component.version} -> Latest {ui['latest_version']} (via {ui['package_manager_name']})"
-                cmd_line = f"Update Command: `{ui['update_command']}`" if ui.get('update_command') else ""
+                cmd_line = (
+                    f"Update Command: `{ui['update_command']}`"
+                    if ui.get("update_command")
+                    else ""
+                )
 
                 if format_type == "md":
                     lines.append(f"- **Update Status:** {update_line}")
-                    if cmd_line: lines.append(f"  - {cmd_line}")
+                    if cmd_line:
+                        lines.append(f"  - {cmd_line}")
                 # elif format_type == "html": # Removed for table
                 #     lines.append(f"<li><b>Update Status:</b> {html.escape(update_line)}")
                 #     if cmd_line: lines.append(f"<br/>&nbsp;&nbsp;<em>{html.escape(cmd_line)}</em>")
                 #     lines.append("</li>")
-                elif format_type != "html": # TXT
+                elif format_type != "html":  # TXT
                     lines.append(f"  Update Status: {update_line}")
-                    if cmd_line: lines.append(f"    {cmd_line}")
+                    if cmd_line:
+                        lines.append(f"    {cmd_line}")
 
         if component.issues:
             # if format_type == "html": lines.append("<li><b>Issues:</b><ul>") # Removed for table
             # else: lines.append(f"  Issues:") # Keep for TXT/MD
-            if format_type != "html": lines.append(f"  Issues:")
-            for issue in component.issues: # issue is already a string or ScanIssue object
-                desc = issue.description if hasattr(issue, 'description') else str(issue)
-                sev = f" ({issue.severity})" if hasattr(issue, 'severity') else ""
-                if format_type == "md": lines.append(f"  - *{desc}{sev}*")
+            if format_type != "html":
+                lines.append("  Issues:")
+            for (
+                issue
+            ) in component.issues:  # issue is already a string or ScanIssue object
+                desc = (
+                    issue.description if hasattr(issue, "description") else str(issue)
+                )
+                sev = f" ({issue.severity})" if hasattr(issue, "severity") else ""
+                if format_type == "md":
+                    lines.append(f"  - *{desc}{sev}*")
                 # elif format_type == "html": lines.append(f"<li><em>{html.escape(desc)}{html.escape(sev)}</em></li>") # Removed for table
-                elif format_type != "html": lines.append(f"    - {desc}{sev}") # TXT
+                elif format_type != "html":
+                    lines.append(f"    - {desc}{sev}")  # TXT
             # if format_type == "html": lines.append("</ul></li>") # Removed for table
 
         # if format_type == "html": lines.append("</ul>") # Removed for table
         if format_type != "html":
             return "\n".join(lines)
         # For HTML, the new method returns a full <tr> string, so this join is not needed for HTML.
-        return "" # Should not be reached for HTML if logic is correct.
-
+        return ""  # Should not be reached for HTML if logic is correct.
 
     def _format_env_var(self, env_var, format_type="txt"):
         lines = []
         val_display = env_var.value
-        if len(val_display) > 200 and format_type != "json": # Truncate long values for readability
+        if (
+            len(val_display) > 200 and format_type != "json"
+        ):  # Truncate long values for readability
             val_display = val_display[:200] + "..."
 
         if format_type == "html":
             issues_str_parts = []
             if env_var.issues:
                 for issue in env_var.issues:
-                    desc = issue.description if hasattr(issue, 'description') else str(issue)
-                    sev = f" ({issue.severity})" if hasattr(issue, 'severity') else ""
-                    issues_str_parts.append(f"Issue:{html.escape(sev)} {html.escape(desc)}")
-            issues_html_summary = "<br/>".join(issues_str_parts) if issues_str_parts else "OK"
+                    desc = (
+                        issue.description
+                        if hasattr(issue, "description")
+                        else str(issue)
+                    )
+                    sev = f" ({issue.severity})" if hasattr(issue, "severity") else ""
+                    issues_str_parts.append(
+                        f"Issue:{html.escape(sev)} {html.escape(desc)}"
+                    )
+            issues_html_summary = (
+                "<br/>".join(issues_str_parts) if issues_str_parts else "OK"
+            )
 
             return f"""<tr>
   <td><code>{html.escape(env_var.name)}</code></td>
@@ -140,26 +185,46 @@ class ReportGenerator:
         # For MD and TXT formats
         lines = []
         if format_type == "md":
-            lines.append(f"- **`{html.escape(env_var.name)}`** (`{html.escape(env_var.scope)}`): `{html.escape(val_display)}`")
-        else: # txt
+            lines.append(
+                f"- **`{html.escape(env_var.name)}`** (`{html.escape(env_var.scope)}`): `{html.escape(val_display)}`"
+            )
+        else:  # txt
             lines.append(f"{env_var.name} ({env_var.scope}): {val_display}")
 
         if env_var.issues:
             for issue in env_var.issues:
-                desc = issue.description if hasattr(issue, 'description') else str(issue)
-                sev = f" ({issue.severity})" if hasattr(issue, 'severity') else ""
-                if format_type == "md": lines.append(f"  - *Issue:{html.escape(sev)} {html.escape(desc)}*")
-                else: lines.append(f"  - Issue:{sev} {desc}")
+                desc = (
+                    issue.description if hasattr(issue, "description") else str(issue)
+                )
+                sev = f" ({issue.severity})" if hasattr(issue, "severity") else ""
+                if format_type == "md":
+                    lines.append(f"  - *Issue:{html.escape(sev)} {html.escape(desc)}*")
+                else:
+                    lines.append(f"  - Issue:{sev} {desc}")
         return "\n".join(lines)
 
     def _format_issue(self, issue, format_type="txt"):
         line = ""
-        comp_info = f" (Component: {html.escape(str(issue.component_id))})" if issue.component_id else ""
-        path_info = f" (Path: {html.escape(str(issue.related_path))})" if issue.related_path else ""
+        comp_info = (
+            f" (Component: {html.escape(str(issue.component_id))})"
+            if issue.component_id
+            else ""
+        )
+        path_info = (
+            f" (Path: {html.escape(str(issue.related_path))})"
+            if issue.related_path
+            else ""
+        )
 
         if format_type == "html":
-            related_info = html.escape(str(issue.component_id or issue.related_path or "N/A"))
-            suggested_action = html.escape(str(issue.recommendation or "Refer to documentation/Investigate further"))
+            related_info = html.escape(
+                str(issue.component_id or issue.related_path or "N/A")
+            )
+            suggested_action = html.escape(
+                str(
+                    issue.recommendation or "Refer to documentation/Investigate further"
+                )
+            )
 
             # Apply class to severity cell for potential styling
             severity_class = f"severity-{html.escape(issue.severity.lower())}"
@@ -177,7 +242,7 @@ class ReportGenerator:
             line = f"- **{html.escape(issue.severity)} ({html.escape(issue.category)}):** {html.escape(issue.description)}{comp_info}{path_info}"
             if issue.recommendation:
                 line += f" (Suggestion: {html.escape(issue.recommendation)})"
-        else: # txt
+        else:  # txt
             line = f"- {issue.severity} ({issue.category}): {issue.description}{comp_info}{path_info}"
             if issue.recommendation:
                 line += f" (Suggestion: {issue.recommendation})"
@@ -190,16 +255,20 @@ class ReportGenerator:
         # For now, let's assume GUI will handle its own formatting from these objects.
         return {
             "report_time": self.report_time,
-            "detected_components": [comp.to_dict() for comp in self.detected_components],
-            "environment_variables": [ev.to_dict() for ev in self.environment_variables],
-            "issues": [iss.to_dict() for iss in self.issues]
+            "detected_components": [
+                comp.to_dict() for comp in self.detected_components
+            ],
+            "environment_variables": [
+                ev.to_dict() for ev in self.environment_variables
+            ],
+            "issues": [iss.to_dict() for iss in self.issues],
         }
 
     def export_to_txt(self, filepath):
         logger.info(f"Exporting report to TXT: {filepath}")
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(f"Developer Environment Audit Report\n")
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("Developer Environment Audit Report\n")
                 f.write(f"Generated: {self.report_time}\n")
                 f.write("=" * 40 + "\n\n")
 
@@ -236,8 +305,8 @@ class ReportGenerator:
     def export_to_markdown(self, filepath):
         logger.info(f"Exporting report to Markdown: {filepath}")
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(f"# Developer Environment Audit Report\n\n")
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("# Developer Environment Audit Report\n\n")
                 f.write(f"**Generated:** {self.report_time}\n\n")
                 f.write("---\n\n")
 
@@ -271,13 +340,13 @@ class ReportGenerator:
 
     def export_to_json(self, filepath):
         logger.info(f"Exporting report to JSON: {filepath}")
-        report_data = self.generate_report_data_for_gui() # Use the same structure
+        report_data = self.generate_report_data_for_gui()  # Use the same structure
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(report_data, f, indent=2)
             logger.info(f"JSON report saved to {filepath}")
             return True
-        except (IOError, TypeError) as e: # TypeError for objects not serializable
+        except (IOError, TypeError) as e:  # TypeError for objects not serializable
             logger.error(f"Failed to write JSON report to {filepath}: {e}")
             return False
 
@@ -404,7 +473,9 @@ class ReportGenerator:
         components_html = ""
         if self.detected_components:
             for comp in self.detected_components:
-                components_html += self._format_component(comp, "html") + "\n" # Removed <hr/>
+                components_html += (
+                    self._format_component(comp, "html") + "\n"
+                )  # Removed <hr/>
         else:
             components_html = "<tr><td colspan='6'>No components detected.</td></tr>\n"
 
@@ -418,7 +489,9 @@ class ReportGenerator:
         issues_html = ""
         if self.issues:
             for issue in self.issues:
-                issues_html += self._format_issue(issue, "html") + "\n" # Removed div wrapper
+                issues_html += (
+                    self._format_issue(issue, "html") + "\n"
+                )  # Removed div wrapper
         else:
             issues_html = "<tr><td colspan='5'>No issues identified.</td></tr>\n"
 
@@ -427,48 +500,98 @@ class ReportGenerator:
         final_html = final_html.replace("{{issues_section}}", issues_html)
 
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 f.write(final_html)
             logger.info(f"HTML report saved to {filepath}")
             return True
         except IOError as e:
             logger.error(f"Failed to write HTML report to {filepath}: {e}")
             return False
-        except Exception as e: # Catch any other unexpected error during HTML generation
-            logger.error(f"An unexpected error occurred during HTML export: {e}", exc_info=True)
+        except (
+            Exception
+        ) as e:  # Catch any other unexpected error during HTML generation
+            logger.error(
+                f"An unexpected error occurred during HTML export: {e}", exc_info=True
+            )
             return False
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Ensure os is imported if running directly for os.path.basename used in _format_component
     import os
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
 
     # Create dummy data for testing
     # Assuming scan_logic.py is in the same directory or PYTHONPATH
     from scan_logic import DetectedComponent, EnvironmentVariableInfo, ScanIssue
 
-
     comps = [
-        DetectedComponent(id="python_3.9_python.exe", name="Python", category="Language", version="3.9.7",
-                          path="/usr/bin/python3.9", executable_path="/usr/bin/python3.9",
-                          details={"Architecture": "64-bit", "Sub-details": {"More": "stuff", "EvenMore": "things"}},
-                          update_info={"latest_version": "3.9.10", "package_manager_name": "apt",
-                                       "update_command": "sudo apt upgrade python3", "is_update_available": True},
-                          issues=[ScanIssue("Path not in system PATH", "Warning", "python_3.9_python.exe")]),
-        DetectedComponent(id="git_2.30_git.exe", name="Git", category="VCS", version="2.30.1",
-                          path="/usr/bin/git", executable_path="/usr/bin/git", details={"user.name": "Test User"})
+        DetectedComponent(
+            id="python_3.9_python.exe",
+            name="Python",
+            category="Language",
+            version="3.9.7",
+            path="/usr/bin/python3.9",
+            executable_path="/usr/bin/python3.9",
+            details={
+                "Architecture": "64-bit",
+                "Sub-details": {"More": "stuff", "EvenMore": "things"},
+            },
+            update_info={
+                "latest_version": "3.9.10",
+                "package_manager_name": "apt",
+                "update_command": "sudo apt upgrade python3",
+                "is_update_available": True,
+            },
+            issues=[
+                ScanIssue("Path not in system PATH", "Warning", "python_3.9_python.exe")
+            ],
+        ),
+        DetectedComponent(
+            id="git_2.30_git.exe",
+            name="Git",
+            category="VCS",
+            version="2.30.1",
+            path="/usr/bin/git",
+            executable_path="/usr/bin/git",
+            details={"user.name": "Test User"},
+        ),
     ]
     env_vars = [
-        EnvironmentVariableInfo(name="PATH", value="/usr/bin:/bin:/usr/local/bin", issues=[
-            ScanIssue("Entry '/usr/games' not found", "Warning", related_path="/usr/games")]),
-        EnvironmentVariableInfo(name="JAVA_HOME", value="/opt/jdk-11", issues=[
-            ScanIssue("Path /opt/jdk-11 does not exist", "Critical", related_path="/opt/jdk-11")]),
-        EnvironmentVariableInfo(name="API_KEY_SECRET", value="supersecretvalue")
+        EnvironmentVariableInfo(
+            name="PATH",
+            value="/usr/bin:/bin:/usr/local/bin",
+            issues=[
+                ScanIssue(
+                    "Entry '/usr/games' not found", "Warning", related_path="/usr/games"
+                )
+            ],
+        ),
+        EnvironmentVariableInfo(
+            name="JAVA_HOME",
+            value="/opt/jdk-11",
+            issues=[
+                ScanIssue(
+                    "Path /opt/jdk-11 does not exist",
+                    "Critical",
+                    related_path="/opt/jdk-11",
+                )
+            ],
+        ),
+        EnvironmentVariableInfo(name="API_KEY_SECRET", value="supersecretvalue"),
     ]
     issues = [
         ScanIssue("Global issue example", "Critical", category="System"),
-        ScanIssue("Another warning", "Warning", component_id="python_3.9_python.exe", category="Configuration")
+        ScanIssue(
+            "Another warning",
+            "Warning",
+            component_id="python_3.9_python.exe",
+            category="Configuration",
+        ),
     ]
 
     reporter = ReportGenerator(comps, env_vars, issues)
