@@ -4,8 +4,9 @@ class Profile:
         self.id = id
         self.name = name
         self.type = type
-        self.settings = settings # dict
+        self.settings = settings  # dict
         self.notes = notes
+
 
 class SettingsCategory:
     def __init__(self, id, name, description=None):
