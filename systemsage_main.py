@@ -1,24 +1,13 @@
 # %%
-# System Sage - Integrated System Utility V2.1
+# System Sage - Integrated System Utility V2.5
+lf.action_bar_frame.pack(side="top", fill="x")
 
 # This script provides system inventory, developer environment auditing,
 # and other utilities.
-# V2.0:
-# - Renamed to SystemSageV2.0.py.
-# - Updated internal version references.
-# - Includes fixes for OCL API calls.
-# - Prepared for application compilation with resource_path helper.
-# - Added AI Core module integration (placeholder).
-# - Refactored to use CustomTkinter for main window and tabs.
-# - Refactored internal tab widgets to CustomTkinter equivalents.
-# - Replaced tk.Menu with CTkFrame and CTkButtons for main actions.
-# - Replaced OCL Profiles ttk.Treeview with CTkTable.
-# - Replaced all ttk.Treeview instances with CTkTable.
-# - Replaced tkinter.messagebox with custom CTkDialogs.
-# - Replaced filedialog.askdirectory with CTkFileDialog.
-# - Added custom theme and font setup.
-# - Refined widget styling and layout.
-# - Added a fallback mechanism to display a `tkinter` messagebox in case of critical UI errors with CustomTkinter.
+# V2.5:
+# - Renamed to systemsage_main.py
+# placeholder for more detailed description
+# - Added custom message box function for better user feedback
 
 
 import os
@@ -31,9 +20,9 @@ from threading import Thread
 import traceback
 import sys
 import logging
-
-import customtkinter  # Moved customtkinter import earlier as it's used by placeholder
+import customtkinter
 from CTkTable import CTkTable
+from CTkFileDialog import CTkFileDialog 
 
 # --- DevEnvAudit Imports ---
 from devenvaudit_src.scan_logic import EnvironmentScanner
@@ -41,7 +30,9 @@ from devenvaudit_src.report_generator import ReportGenerator
 
 # --- OCL Module Imports ---
 from ocl_module_src import olb_api as ocl_api
-
+# --- NEW: Import the new OCL Profile Editor and data structures ---
+from ocl_module_src.bios_profile import Profile, load_from_json_file
+from ocl_module_src.profile_editor_ui import OclProfileEditor
 
 # --- Custom Message Box Function (defined before CTkFileDialog placeholder that might use it) ---
 def show_custom_messagebox(parent_window, title, message, dialog_type="info"):
@@ -245,15 +236,13 @@ DEFAULT_MARKDOWN_INCLUDE_COMPONENTS = True
 DEFAULT_CONSOLE_INCLUDE_COMPONENTS = False
 DEFAULT_OUTPUT_DIR = "output"
 DEFAULT_COMPONENT_KEYWORDS = ["driver", "sdk", "runtime"]
-DEFAULT_LAUNCHER_HINTS = {
-    "Steam Game": {"publishers": ["valve"], "paths": ["steamapps"]}
-}
+DEFAULT_SOFTWARE_HINTS = resource_path("systemsage_software_hints.json")
 COMPONENT_KEYWORDS_FILE = resource_path("systemsage_component_keywords.json")
-LAUNCHER_HINTS_FILE = resource_path("systemsage_launcher_hints.json")
+SOFTWARE_HINTS_FILE = resource_path("systemsage_software_hints.json")
 COMPONENT_KEYWORDS = load_json_config(
     COMPONENT_KEYWORDS_FILE, DEFAULT_COMPONENT_KEYWORDS
 )
-LAUNCHER_HINTS = load_json_config(LAUNCHER_HINTS_FILE, DEFAULT_LAUNCHER_HINTS)
+SOFTWARE_HINTS = load_json_config(SOFTWARE_HINTS_FILE, DEFAULT_SOFTWARE_HINTS)
 
 
 class DirectorySizeError(Exception):
@@ -275,12 +264,16 @@ def is_likely_component(display_name, publisher):
 
 
 def get_hkey_name(hkey_root):
+    """
+    Returns the string name of a Windows registry hive constant.
+    If the hive is unknown, returns 'UNKNOWN_HIVE'.
+    """
     if not IS_WINDOWS:
         return "N/A"
     if hkey_root == winreg.HKEY_LOCAL_MACHINE:
-        return "HKEY_LOCAL_MACHINE"  # type: ignore
+        return "HKEY_LOCAL_MACHINE"  
     if hkey_root == winreg.HKEY_CURRENT_USER:
-        return "HKEY_CURRENT_USER"  # type: ignore
+        return "HKEY_CURRENT_USER"  
     return str(hkey_root)
 
 
@@ -346,7 +339,7 @@ def get_installed_software(calculate_disk_usage_flag):
             "HKLM (32-bit)",
         ),  # type: ignore
         (
-            winreg.HKEY_CURRENT_USER,
+            winreg.HKEY_CURRENT_USER,++++++++++++++++++++++++++++++++++++++++++++++++++
             r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
             "HKCU",
         ),
@@ -651,16 +644,13 @@ class SystemSageApp(customtkinter.CTk):
         self.cli_args = cli_args
         customtkinter.set_appearance_mode("System")
 
-        # --- Theme and Styling Constants ---
+# --- Theme and Styling Constants ---
         self.corner_radius_std = 6
         self.corner_radius_soft = 8
         self.padding_std = 5
         self.padding_large = 10
-        self.button_hover_color = (
-            "gray70"  # Example, may need adjustment based on theme
-        )
-        self.action_button_fg_color = "default"  # Or a specific color if needed
-
+        self.button_hover_color = ("gray70" )
+        self.action_button_fg_color = "default"
         theme_path = resource_path("custom_theme.json")
         if os.path.exists(theme_path):
             customtkinter.set_default_color_theme(theme_path)
@@ -671,47 +661,43 @@ class SystemSageApp(customtkinter.CTk):
 
         self.default_font = ("Roboto", 12)
         self.button_font = ("Roboto", 12, "bold")
-        self.title_font = ("Roboto", 14, "bold")  # Font for section titles
+        self.title_font = ("Roboto", 14, "bold") # Font for section titles
         self.option_add("*Font", self.default_font)
-        self.title("System Sage V2.0")
+        self.title("System Sage V2.1 - Integrated OCL") # Version bump
         self.geometry("1200x850")
 
         self.inventory_scan_button = None
         self.devenv_audit_button = None
-
         self.inventory_table = None
         self.devenv_components_table = None
         self.devenv_env_vars_table = None
         self.devenv_issues_table = None
-
         self.ocl_profiles_table = None
         self.selected_ocl_profile_id = None
-        self.status_bar = None  # Initialize as None
-
+        self.status_bar = None
         self.scan_in_progress = False
         self.system_inventory_results = []
         self.devenv_components_results = []
         self.devenv_env_vars_results = []
         self.devenv_issues_results = []
-
         self.ocl_profile_details_text = None
+
+        # --- MODIFIED: OCL button variables ---
         self.ocl_refresh_button = None
-        self.ocl_save_new_button = None
+        self.ocl_new_bios_profile_button = None # Replaces ocl_save_new_button
+        self.ocl_import_bios_profile_button = None # New button
         self.ocl_update_selected_button = None
-        self.ocl_edit_profile_button = None  # New button
+        self.ocl_edit_profile_button = None
 
         self._setup_ui()
         if not IS_WINDOWS:
             self.after(100, self.start_system_inventory_scan)
 
     def _setup_ui(self):
+
         # Action Bar
-        self.action_bar_frame = customtkinter.CTkFrame(
-            self, corner_radius=0, height=50, border_width=0
-        )
-        self.action_bar_frame.pack(
-            side=tk.TOP, fill=tk.X, padx=0, pady=(0, self.padding_std)
-        )
+       self.action_bar_frame = customtkinter.CTkFrame(self, corner_radius=0, height=50, border_width=0)
+        self.action_bar_frame.pack(side=tk.TOP, fill=tk.X, padx=0, pady=(0, self.padding_std))
 
         action_button_height = 30
         action_button_padx = self.padding_std
@@ -771,20 +757,12 @@ class SystemSageApp(customtkinter.CTk):
             side=tk.RIGHT, padx=action_button_padx, pady=action_button_pady
         )
 
-        # Main TabView
-        self.main_notebook = customtkinter.CTkTabview(
-            self, corner_radius=self.corner_radius_soft, border_width=0
-        )
-        self.main_notebook.pack(
-            expand=True,
-            fill="both",
-            padx=self.padding_large,
-            pady=(self.padding_std, self.padding_large),
-        )
+       # Main TabView
+        self.main_notebook = customtkinter.CTkTabview(self, corner_radius=self.corner_radius_soft, border_width=0)
+        self.main_notebook.pack(expand=True, fill="both", padx=self.padding_large, pady=(self.padding_std, self.padding_large))
         self.main_notebook.add("System Inventory")
         self.main_notebook.add("Developer Environment Audit")
         self.main_notebook.add("Overclocker's Logbook")
-
         # --- System Inventory Tab ---
         inventory_tab_frame = self.main_notebook.tab("System Inventory")
         inv_cols = [
@@ -959,24 +937,14 @@ class SystemSageApp(customtkinter.CTk):
         devenv_tab_frame.grid_rowconfigure(2, weight=1)
 
         # --- Overclocker's Logbook Tab ---
-        ocl_tab_frame = self.main_notebook.tab("Overclocker's Logbook")
+          ocl_tab_frame = self.main_notebook.tab("Overclocker's Logbook")
         ocl_tab_frame.grid_columnconfigure(0, weight=1)
         ocl_tab_frame.grid_rowconfigure(0, weight=2)
         ocl_tab_frame.grid_rowconfigure(1, weight=1)
-
-        ocl_top_frame = customtkinter.CTkFrame(
-            ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1
-        )
-        ocl_top_frame.grid(
-            row=0,
-            column=0,
-            padx=self.padding_large,
-            pady=(self.padding_large, self.padding_std),
-            sticky="nsew",
-        )
+         ocl_top_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
+        ocl_top_frame.grid(row=0, column=0, padx=self.padding_large, pady=(self.padding_large, self.padding_std), sticky="nsew")
         ocl_top_frame.grid_columnconfigure(0, weight=1)
         ocl_top_frame.grid_rowconfigure(1, weight=1)
-
         customtkinter.CTkLabel(
             master=ocl_top_frame,
             text="Available Overclocking Profiles",
@@ -1011,20 +979,11 @@ class SystemSageApp(customtkinter.CTk):
             expand=True, fill="both", padx=self.padding_std, pady=self.padding_std
         )
 
-        ocl_bottom_frame = customtkinter.CTkFrame(
-            ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1
-        )
-        ocl_bottom_frame.grid(
-            row=1,
-            column=0,
-            padx=self.padding_large,
-            pady=(self.padding_std, self.padding_large),
-            sticky="nsew",
-        )
+         ocl_bottom_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
+        ocl_bottom_frame.grid(row=1, column=0, padx=self.padding_large, pady=(self.padding_std, self.padding_large), sticky="nsew")
         ocl_bottom_frame.grid_columnconfigure(0, weight=1)
         ocl_bottom_frame.grid_rowconfigure(0, weight=1)
         ocl_bottom_frame.grid_rowconfigure(1, weight=0)
-
         profile_details_outer_ctk_frame = customtkinter.CTkFrame(
             ocl_bottom_frame, fg_color="transparent", border_width=0
         )
@@ -1066,64 +1025,26 @@ class SystemSageApp(customtkinter.CTk):
             expand=True, fill="both", padx=self.padding_std, pady=self.padding_std
         )
 
-        actions_ctk_frame = customtkinter.CTkFrame(
-            ocl_bottom_frame, fg_color="transparent", border_width=0
-        )
-        actions_ctk_frame.grid(
-            row=1,
-            column=0,
-            sticky="ew",
-            padx=self.padding_large,
-            pady=(self.padding_std, self.padding_large),
-        )
+ # --- MODIFIED: OCL Action Buttons ---
+        actions_ctk_frame = customtkinter.CTkFrame(ocl_bottom_frame, fg_color="transparent", border_width=0)
+        actions_ctk_frame.grid(row=1, column=0, sticky="ew", padx=self.padding_large, pady=(self.padding_std, self.padding_large))
 
-        self.ocl_refresh_button = customtkinter.CTkButton(
-            master=actions_ctk_frame,
-            text="Refresh Profile List",
-            command=self.refresh_ocl_profiles_list,
-            font=self.button_font,
-            corner_radius=self.corner_radius_soft,
-            hover_color=self.button_hover_color,
-        )
-        self.ocl_refresh_button.pack(
-            side=tk.LEFT, padx=(0, self.padding_std), pady=self.padding_std
-        )
+        self.ocl_refresh_button = customtkinter.CTkButton(master=actions_ctk_frame, text="Refresh List", command=self.refresh_ocl_profiles_list, font=self.button_font, corner_radius=self.corner_radius_soft)
+        self.ocl_refresh_button.pack(side=tk.LEFT, padx=(0, self.padding_std), pady=self.padding_std)
 
-        self.ocl_save_new_button = customtkinter.CTkButton(
-            master=actions_ctk_frame,
-            text="Save System as New Profile",
-            command=self.save_system_as_new_ocl_profile,
-            font=self.button_font,
-            corner_radius=self.corner_radius_soft,
-            hover_color=self.button_hover_color,
-        )
-        self.ocl_save_new_button.pack(
-            side=tk.LEFT, padx=self.padding_std, pady=self.padding_std
-        )
+        # --- NEW: "New BIOS Profile" Button ---
+        self.ocl_new_bios_profile_button = customtkinter.CTkButton(master=actions_ctk_frame, text="New BIOS Profile...", command=self.create_new_bios_profile, font=self.button_font, corner_radius=self.corner_radius_soft)
+        self.ocl_new_bios_profile_button.pack(side=tk.LEFT, padx=self.padding_std, pady=self.padding_std)
 
-        self.ocl_update_selected_button = customtkinter.CTkButton(
-            master=actions_ctk_frame,
-            text="Add Log Entry",
-            command=self.update_selected_ocl_profile,  # Renamed
-            font=self.button_font,
-            corner_radius=self.corner_radius_soft,
-            hover_color=self.button_hover_color,
-        )
-        self.ocl_update_selected_button.pack(
-            side=tk.LEFT, padx=self.padding_std, pady=self.padding_std
-        )
-
-        self.ocl_edit_profile_button = customtkinter.CTkButton(
-            master=actions_ctk_frame,
-            text="Edit Profile",
-            command=self.edit_selected_ocl_profile,
-            font=self.button_font,
-            corner_radius=self.corner_radius_soft,
-            hover_color=self.button_hover_color,
-        )
-        self.ocl_edit_profile_button.pack(
-            side=tk.LEFT, padx=self.padding_std, pady=self.padding_std
-        )
+        # --- NEW: "Import BIOS Profile" Button ---
+        self.ocl_import_bios_profile_button = customtkinter.CTkButton(master=actions_ctk_frame, text="Import BIOS Profile...", command=self.import_bios_profile, font=self.button_font, corner_radius=self.corner_radius_soft)
+        self.ocl_import_bios_profile_button.pack(side=tk.LEFT, padx=self.padding_std, pady=self.padding_std)
+        
+        self.ocl_edit_profile_button = customtkinter.CTkButton(master=actions_ctk_frame, text="Edit Profile", command=self.edit_selected_ocl_profile, font=self.button_font, corner_radius=self.corner_radius_soft)
+        self.ocl_edit_profile_button.pack(side=tk.LEFT, padx=self.padding_std, pady=self.padding_std)
+        
+        self.ocl_update_selected_button = customtkinter.CTkButton(master=actions_ctk_frame, text="Add Log Entry", command=self.update_selected_ocl_profile, font=self.button_font, corner_radius=self.corner_radius_soft)
+        self.ocl_update_selected_button.pack(side=tk.LEFT, padx=self.padding_std, pady=self.padding_std)
 
         # Status Bar
         self.status_bar = customtkinter.CTkLabel(
@@ -1138,6 +1059,114 @@ class SystemSageApp(customtkinter.CTk):
 
         # Load profiles on startup (AFTER status bar is created)
         self.refresh_ocl_profiles_list()
+
+ def create_new_bios_profile(self):
+        """Opens the OCL Profile Editor to create a new profile."""
+        logging.info("Opening OCL Profile Editor in 'create' mode.")
+        
+        # Create a blank profile object to pass to the editor
+        new_profile_obj = Profile(name="New BIOS Profile", description="A detailed BIOS profile.")
+        
+        # The editor will call `_save_profile_from_editor` upon save
+        OclProfileEditor(master=self, mode='create', profile_obj=new_profile_obj, callback=self._save_profile_from_editor)
+
+    def import_bios_profile(self):
+        """Imports a BIOS profile from a JSON file."""
+        dialog = CTkFileDialog(master=self, title="Select BIOS Profile JSON File", filetypes=[("JSON files", "*.json")])
+        filepath = dialog.get()
+
+        if not filepath:
+            logging.info("BIOS profile import cancelled.")
+            return
+
+        try:
+            profile_obj = load_from_json_file(filepath)
+            if profile_obj:
+                # We have a Profile object, now save it to the database via the API
+                flat_settings = Profile.to_flat_list(profile_obj.settings)
+                
+                profile_id = ocl_api.create_new_profile(
+                    name=profile_obj.name,
+                    description=profile_obj.description,
+                    initial_settings=flat_settings,
+                    initial_logs=[f"Profile imported from {os.path.basename(filepath)}"]
+                )
+                if profile_id:
+                    show_custom_messagebox(self, "Import Success", f"Successfully imported '{profile_obj.name}' into the database.", "info")
+                    self.refresh_ocl_profiles_list()
+                else:
+                    show_custom_messagebox(self, "Import Error", "Failed to save the imported profile to the database.", "error")
+            else:
+                show_custom_messagebox(self, "Import Error", "Could not read or parse the selected JSON file.", "error")
+        except Exception as e:
+            logging.error(f"Error during BIOS profile import: {e}", exc_info=True)
+            show_custom_messagebox(self, "Import Error", f"An unexpected error occurred: {e}", "error")
+
+    def edit_selected_ocl_profile(self):
+        """Opens the selected OCL profile in the new editor UI."""
+        if self.selected_ocl_profile_id is None:
+            show_custom_messagebox(self, "No Profile Selected", "Please select a profile to edit.", "warning")
+            return
+
+        logging.info(f"Opening OCL Profile Editor in 'edit' mode for ID: {self.selected_ocl_profile_id}")
+        details = ocl_api.get_profile_details(self.selected_ocl_profile_id)
+
+        if not details:
+            show_custom_messagebox(self, "Error", f"Could not fetch details for profile ID: {self.selected_ocl_profile_id}.", "error")
+            return
+
+        # Create a Profile object from the database details
+        profile_to_edit = Profile(
+            name=details.get("name"),
+            description=details.get("description"),
+            profile_id=details.get("id")
+        )
+        # The settings from DB are already a flat list, which is what the editor now expects
+        profile_to_edit.settings = details.get("settings", [])
+        
+        # Pass this object to the editor
+        OclProfileEditor(master=self, mode='edit', profile_obj=profile_to_edit, callback=self._save_profile_from_editor)
+
+    def _save_profile_from_editor(self, profile_obj: Profile):
+        """Callback function for the OclProfileEditor to save data."""
+        flat_settings = Profile.to_flat_list(profile_obj.settings)
+        
+        try:
+            if self.mode == 'edit' and profile_obj.id is not None:
+                # Update existing profile
+                success = ocl_api.update_existing_profile(
+                    profile_id=profile_obj.id,
+                    name=profile_obj.name,
+                    description=profile_obj.description,
+                    settings_to_update=flat_settings # Simplified: replace all settings
+                )
+                if success:
+                    show_custom_messagebox(self, "Success", f"Profile '{profile_obj.name}' updated successfully.", "info")
+                else:
+                    raise Exception("API returned failure on update.")
+            else:
+                # Create new profile
+                profile_id = ocl_api.create_new_profile(
+                    name=profile_obj.name,
+                    description=profile_obj.description,
+                    initial_settings=flat_settings
+                )
+                if profile_id:
+                     show_custom_messagebox(self, "Success", f"New profile '{profile_obj.name}' created successfully.", "info")
+                else:
+                    raise Exception("API returned no ID on creation.")
+            
+            self.refresh_ocl_profiles_list()
+        
+        except Exception as e:
+            logging.error(f"Failed to save profile from editor: {e}", exc_info=True)
+            show_custom_messagebox(self, "Save Error", f"Could not save the profile to the database: {e}", "error")
+
+    # --- DEPRECATED METHOD ---
+    # We no longer need this complex, dialog-based method.
+    def save_system_as_new_ocl_profile(self):
+        show_custom_messagebox(self, "Action Changed", "This action has been replaced. Please use 'New BIOS Profile' to open the detailed editor or 'Import BIOS Profile' for JSON files.", "info")
+        logging.warning("'save_system_as_new_ocl_profile' called, but is deprecated.")
 
     def _update_action_buttons_state(self, state):
         button_state = (
@@ -1281,6 +1310,51 @@ class SystemSageApp(customtkinter.CTk):
                     )
 
             self.inventory_table.update_values(table_values)
+    def on_ocl_profile_select_ctktable(self, selection_data):
+        # ... (This method needs a slight tweak to display the new data format better) ...
+        # ... (Existing selection logic to get profile_id is fine) ...
+        try:
+            # ... (existing code to get profile_id_val_str) ...
+            
+            self.selected_ocl_profile_id = int(profile_id_val_str)
+            logging.info(f"OCL profile selected. ID: {self.selected_ocl_profile_id}")
+            details = ocl_api.get_profile_details(self.selected_ocl_profile_id)
+
+            if self.ocl_profile_details_text:
+                self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
+                self.ocl_profile_details_text.delete("0.0", tk.END)
+                if details:
+                    # Convert flat settings from DB to hierarchical for display
+                    hierarchical_settings = Profile.from_flat_list(details.get("settings", []))
+
+                    display_text = f"Profile: {details.get('name', 'N/A')} (ID: {details.get('id')})\n"
+                    display_text += f"Description: {details.get('description', 'N/A')}\n\n"
+                    
+                    # --- MODIFIED: Display hierarchical settings ---
+                    display_text += "--- Settings ---\n"
+                    if hierarchical_settings:
+                        for category, settings in hierarchical_settings.items():
+                            display_text += f"[{category}]\n"
+                            for name, value in settings.items():
+                                display_text += f"  {name}: {value}\n"
+                    else:
+                        display_text += "  (No settings for this profile)\n"
+
+                    display_text += "\n--- Logs ---\n"
+                    if details.get("logs"):
+                        for log in details.get("logs", []):
+                            display_text += f"  - [{log.get('timestamp', 'N/A')}]: {log.get('log_text', 'N/A')}\n"
+                    else:
+                        display_text += "  (No logs for this profile)\n"
+
+                    self.ocl_profile_details_text.insert("0.0", display_text)
+                else:
+                    self.ocl_profile_details_text.insert("0.0", f"No details found for profile ID: {self.selected_ocl_profile_id}")
+                self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
+        except Exception as e:
+            # ... (existing error handling) ...
+            pass
+    
 
         self.system_inventory_results = software_list
         status_msg = (
@@ -1553,84 +1627,15 @@ class SystemSageApp(customtkinter.CTk):
         elif not profile_description.strip():  # Empty string or whitespace
             profile_description = "No description provided."
 
-        # 3. Loop for settings
-        initial_settings = []
-        while True:
-            add_setting_dialog = customtkinter.CTkInputDialog(
-                text="Add a new setting? (yes/no)",
-                title="New OCL Profile - Add Setting",
-            )
-            add_setting_choice = add_setting_dialog.get_input()
-
-            if add_setting_choice is None or add_setting_choice.lower() != "yes":
-                break  # Break if cancelled or not 'yes'
-
-            category_dialog = customtkinter.CTkInputDialog(
-                text="Enter Setting Category (e.g., CPU, Memory):",
-                title="New Setting - Category",
-            )
-            setting_category = category_dialog.get_input()
-            if not setting_category:  # Cancelled or empty
-                show_custom_messagebox(
-                    self,
-                    "Info",
-                    "Setting input cancelled or empty. Stopping setting additions.",
-                    dialog_type="info",
-                )
-                break
-
-            name_dialog = customtkinter.CTkInputDialog(
-                text="Enter Setting Name (e.g., Core Clock, Voltage):",
-                title="New Setting - Name",
-            )
-            setting_name = name_dialog.get_input()
-            if not setting_name:  # Cancelled or empty
-                show_custom_messagebox(
-                    self,
-                    "Info",
-                    "Setting input cancelled or empty. Stopping setting additions.",
-                    dialog_type="info",
-                )
-                break
-
-            value_dialog = customtkinter.CTkInputDialog(
-                text="Enter Setting Value (e.g., 4.5 GHz, 1.25v):",
-                title="New Setting - Value",
-            )
-            setting_value = value_dialog.get_input()
-            if (
-                setting_value is None
-            ):  # Check for explicit cancel, empty string is a valid value
-                show_custom_messagebox(
-                    self,
-                    "Info",
-                    "Setting input cancelled. Stopping setting additions.",
-                    dialog_type="info",
-                )
-                break
-
-            type_dialog = customtkinter.CTkInputDialog(
-                text="Enter Value Type (str, int, float, bool):",
-                title="New Setting - Value Type",
-            )
-            value_type = type_dialog.get_input()
-            if not value_type:  # Cancelled or empty
-                value_type = "str"  # Default to string
-
-            initial_settings.append(
-                {
-                    "category": setting_category,
-                    "setting_name": setting_name,
-                    "setting_value": setting_value,
-                    "value_type": value_type,
-                }
-            )
-            show_custom_messagebox(
-                self,
-                "Setting Added",
-                f"Setting '{setting_name}' added to profile.",
-                dialog_type="info",
-            )
+    if __name__ == "__main__":
+    # ... (your existing argparse and main app startup logic) ...
+    try:
+        app = SystemSageApp(cli_args=args)
+        app.mainloop()
+    except Exception as e:
+        # ... (your existing critical error handling) ...
+        pass
+   
 
         # Ask to include hardware snapshot
         snapshot_dialog = customtkinter.CTkInputDialog(
@@ -2183,7 +2188,84 @@ class SystemSageApp(customtkinter.CTk):
             if self.status_bar:
                 self.status_bar.configure(text=f"Add Log: Invalid type '{log_type}'.")
             return
+ # 3. Loop for settings
+        initial_settings = []
+        while True:
+            add_setting_dialog = customtkinter.CTkInputDialog(
+                ="Add a new setting? (yes/no)",
+                title="New OCL Profile - Add Setting",
+            )
+            add_setting_choice = add_setting_dialog.get_input()
 
+            if add_setting_choice is None or add_setting_choice.lower() != "yes":
+                break  # Break if cancelled or not 'yes'
+
+            category_dialog = customtkinter.CTkInputDialog(
+                text="Enter Setting Category (e.g., CPU, Memory):",
+                title="New Setting - Category",
+            )
+            setting_category = category_dialog.get_input()
+            if not setting_category:  # Cancelled or empty
+                show_custom_messagebox(
+                    self,
+                    "Info",
+                    "Setting input cancelled or empty. Stopping setting additions.",
+                    dialog_type="info",
+                )
+                break
+
+            name_dialog = customtkinter.CTkInputDialog(
+                text="Enter Setting Name (e.g., Core Clock, Voltage):",
+                title="New Setting - Name",
+            )
+            setting_name = name_dialog.get_input()
+            if not setting_name:  # Cancelled or empty
+                show_custom_messagebox(
+                    self,
+                    "Info",
+                    "Setting input cancelled or empty. Stopping setting additions.",
+                    dialog_type="info",
+                )
+                break
+
+            value_dialog = customtkinter.CTkInputDialog(
+                text="Enter Setting Value (e.g., 4.5 GHz, 1.25v):",
+                title="New Setting - Value",
+            )
+            setting_value = value_dialog.get_input()
+            if (
+                setting_value is None
+            ):  # Check for explicit cancel, empty string is a valid value
+                show_custom_messagebox(
+                    self,
+                    "Info",
+                    "Setting input cancelled. Stopping setting additions.",
+                    dialog_type="info",
+                )
+                break
+
+            type_dialog = customtkinter.CTkInputDialog(
+                text="Enter Value Type (str, int, float, bool):",
+                title="New Setting - Value Type",
+            )
+            value_type = type_dialog.get_input()
+            if not value_type:  # Cancelled or empty
+                value_type = "str"  # Default to string
+
+            initial_settings.append(
+                {
+                    "category": setting_category,
+                    "setting_name": setting_name,
+                    "setting_value": setting_value,
+                    "value_type": value_type,
+                }
+            )
+            show_custom_messagebox(
+                self,
+                "Setting Added",
+                f"Setting '{setting_name}' added to profile.",
+                dialog_type="info",
+            )
         # Check if log_text_to_add was successfully populated by the log type branches
         if log_text_to_add is not None:
             success = False

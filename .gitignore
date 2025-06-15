@@ -1,6 +1,12 @@
 # Ignore system inventory files
-output/system_sage_inventory.json
-output/system_sage_inventory.md
-/output
 .json
 .md
+# Ignore output files from system sage  
+/output_data/devenv_audit/devenv_audit_*.json
+/output_data/system_inventory/system_inventory_*.json
+/output/selected_dummy_folder_by_ctkfiledialog/system_sage_combined_report.json
+/output/selected_dummy_folder_by_ctkfiledialog/system_sage_combined_report.md
+/output/system_sage_inventory.json
+/output/system_sage_inventory.md
+#Ignore pycache files
+.pyc
