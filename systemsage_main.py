@@ -19,7 +19,7 @@ import sys
 import logging
 import customtkinter
 from CTkTable import CTkTable
-from CTkFileDialog import CTkFileDialog 
+# CTkFileDialog will be imported in the fallback logic below
 
 # --- DevEnvAudit Imports ---
 from devenvaudit_src.scan_logic import EnvironmentScanner
@@ -164,22 +164,46 @@ class _BaseCTkFileDialogPlaceholder:
 CTkFileDialog = _BaseCTkFileDialogPlaceholder
 
 try:
-    from CTkFileDialog.CTkFileDialog import CTkFileDialog as RealCTkFileDialog
+    # Attempt to import the class using the common import pattern
+    from CTkFileDialog import CTkFileDialog as RealCTkFileDialog
 
-    CTkFileDialog = RealCTkFileDialog
-    logging.info(
-        "Successfully imported real CTkFileDialog from CTkFileDialog.CTkFileDialog"
-    )
+    # Ensure what we imported is actually callable (a class)
+    if callable(RealCTkFileDialog):
+        CTkFileDialog = RealCTkFileDialog
+        logging.info(
+            "Successfully imported real CTkFileDialog"
+        )
+    else:
+        logging.warning(
+            "Imported CTkFileDialog is not callable. Placeholder will be used."
+        )
+        # CTkFileDialog remains _BaseCTkFileDialogPlaceholder
 except ImportError as e_import_ctk:
     logging.warning(
-        f"Failed to import real CTkFileDialog from CTkFileDialog.CTkFileDialog: {e_import_ctk}. Placeholder will be used."
+        f"Failed to import real CTkFileDialog: {e_import_ctk}. Placeholder will be used."
     )
 except Exception as e_unexpected_import:
     logging.error(
         f"Unexpected error during CTkFileDialog import: {e_unexpected_import}. Placeholder will be used."
     )
 
+# The following block was part of the original code structure, ensure logging matches.
+# If the above try-except successfully assigns RealCTkFileDialog, this log is fine.
+# If it falls through to placeholder, the previous logs cover it.
+# The original log was:
+# logging.info(
+# "Successfully imported real CTkFileDialog from CTkFileDialog.CTkFileDialog"
+# )
+# This needs to be adjusted based on which import succeeded if we had multiple attempts.
+# Given the simplification to one primary import attempt for the real dialog:
+if CTkFileDialog is not _BaseCTkFileDialogPlaceholder:
+    pass # Logging already handled if RealCTkFileDialog was assigned
+else:
+    # This case is logged by the except blocks or the 'not callable' path.
+    pass
 
+
+# --- Helper function for PyInstaller resource path ---
 # --- Helper function for PyInstaller resource path ---
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
@@ -338,7 +362,7 @@ def get_installed_software(calculate_disk_usage_flag):
             "HKLM (32-bit)",
         ), 
         (
-            winreg.HKEY_CURRENT_USER, # Corrected the line with plus signs
+            winreg.HKEY_CURRENT_USER, # type: ignore 
             r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
             "HKCU",
         ),
@@ -1130,7 +1154,7 @@ class SystemSageApp(customtkinter.CTk):
             self.status_bar.configure(text=error_message)
         
         # Ensure UI elements are reset to a usable state
-        self.finalize_scan_ui_state() # This re-enables buttons etc.
+        # self.finalize_scan_ui_state() # This will be called by the thread's finally block
 
         # Inform the user
         show_custom_messagebox(
@@ -1377,13 +1401,26 @@ class SystemSageApp(customtkinter.CTk):
     def run_system_inventory_thread(self, calculate_disk_usage_flag):
         try:
             software_list = get_installed_software(calculate_disk_usage_flag)
-            self.after(0, self.update_inventory_display, software_list)
-            self.save_system_inventory_report(software_list)  # Call the new save method
+            self.system_inventory_results = software_list # Store results
+            self.after(0, self._update_inventory_display_from_thread, software_list)
+            self.save_system_inventory_report(software_list)
         except Exception as e:
             logging.error(
                 f"Error in system inventory thread: {e}\n{traceback.format_exc()}"
             )
-            self.after(0, self.inventory_scan_error, e)
+            self.after(0, self._inventory_scan_error_from_thread, e)
+        finally:
+            self.after(0, self.finalize_scan_ui_state) # Centralized call
+
+    def _update_inventory_display_from_thread(self, software_list):
+        """Helper to call inventory display update from thread."""
+        self.update_inventory_display(software_list)
+        if self.status_bar:
+            self.status_bar.configure(text="System Inventory Scan completed.")
+
+    def _inventory_scan_error_from_thread(self, error_exception):
+        """Helper to call inventory error handler from thread."""
+        self.inventory_scan_error(error_exception)
 
     def save_system_inventory_report(self, software_list):
         output_dir = "output_data/system_inventory/"
@@ -1392,18 +1429,154 @@ class SystemSageApp(customtkinter.CTk):
             filename = f"system_inventory_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
             full_path = os.path.join(output_dir, filename)
 
-            # Prepare data for JSON dump. software_list is a list of dictionaries.
+              # Prepare data for JSON dump. software_list is a list of dictionaries.
             # We can wrap it for consistency or add metadata.
             report_data = {
-                "reportTime": datetime.datetime.now().isoformat(),
-                "systemInventory": software_list,
+                "report_generated_at": datetime.datetime.now().isoformat(),
+                "system_inventory": software_list
             }
-
             with open(full_path, "w", encoding="utf-8") as f:
                 json.dump(report_data, f, ensure_ascii=False, indent=4)
-
             logging.info(f"System inventory report successfully saved to {full_path}")
 
+    # --- DevEnv Audit Scan Methods ---
+    def _clear_devenv_tables(self):
+        """Clears the DevEnv audit tables and resets headers."""
+        comp_cols_list = ["ID", "Name", "Category", "Version", "Path", "Executable Path", "Source", "DB Name"]
+        env_cols_list = ["Name", "Value", "Scope"]
+        issue_cols_list = ["Severity", "Description", "Category", "Component ID", "Related Path"]
+
+        if self.devenv_components_table:
+            self.devenv_components_table.update_values([comp_cols_list])
+        if self.devenv_env_vars_table:
+            self.devenv_env_vars_table.update_values([env_cols_list])
+        if self.devenv_issues_table:
+            self.devenv_issues_table.update_values([issue_cols_list])
+
+    def start_devenv_audit_scan(self):
+        if self.scan_in_progress:
+            show_custom_messagebox(self, "Scan In Progress", "A scan is already running.", dialog_type="warning")
+            return
+
+        self.scan_in_progress = True
+        if self.status_bar:
+            self.status_bar.configure(text="Starting Developer Environment Audit...")
+        self._update_action_buttons_state(customtkinter.DISABLED)
+        self._clear_devenv_tables()
+
+        # Clear previous results
+        self.devenv_components_results = []
+        self.devenv_env_vars_results = []
+        self.devenv_issues_results = []
+
+        thread = Thread(target=self.run_devenv_audit_thread, daemon=True)
+        thread.start()
+
+       def run_devenv_audit_thread(self):
+        try:
+            scanner = EnvironmentScanner(
+                hints_file_path=SOFTWARE_HINTS_FILE, 
+                component_keywords=COMPONENT_KEYWORDS
+            )
+            components, env_vars, issues = scanner.scan_environment()
+         
+            # Store results
+            self.devenv_components_results = components if components else []
+            self.devenv_env_vars_results = env_vars if env_vars else []
+            self.devenv_issues_results = issues if issues else []
+            
+            self.after(0, self._update_devenv_audit_display_from_thread, components, env_vars, issues)
+        except Exception as e:
+            logging.error(f"Error in DevEnv audit thread: {e}\n{traceback.format_exc()}")
+            self.after(0, self._devenv_audit_error_from_thread, e)
+        finally:
+            self.after(0, self.finalize_scan_ui_state)
+
+    def _update_devenv_audit_display_from_thread(self, components, env_vars, issues):
+        """Helper to call DevEnv display update from thread."""
+                    )
+            self.system_inventory_results = software_list # Store results
+            self.inventory_table.update_values(table_values)
+            # self.finalize_scan_ui_state() # This will be called by the thread's finally block
+            # if self.status_bar: # Status update moved to _update_inventory_display_from_thread
+            # self.status_bar.configure(text="System Inventory Scan completed.")
+
+    def on_ocl_profile_select_ctktable(self, selection_data):
+        selected_data_row_index = selection_data.get("row")
+        if selected_data_row_index is None:
+        self.devenv_audit_error(error_exception)
+
+    def update_devenv_audit_display(self, components, env_vars, issues):
+        # Update Components Table
+        if self.devenv_components_table:
+            comp_cols_list = ["ID", "Name", "Category", "Version", "Path", "Executable Path", "Source", "DB Name"]
+            comp_values = [comp_cols_list]
+            if components:
+                for comp in components:
+                    c = comp.to_dict()
+                    comp_values.append([
+                        str(c.get("id", "N/A")), str(c.get("name", "N/A")), str(c.get("category", "N/A")),
+                        str(c.get("version", "N/A")), str(c.get("path", "N/A")), str(c.get("executable_path", "N/A")),
+                        str(c.get("source", "N/A")), str(c.get("db_name", "N/A"))
+                    ])
+            else:
+                comp_values.append(["No components detected.", "", "", "", "", "", "", ""])
+            self.devenv_components_table.update_values(comp_values)
+
+        # Update Environment Variables Table
+        if self.devenv_env_vars_table:
+            env_cols_list = ["Name", "Value", "Scope"]
+            env_values = [env_cols_list]
+            if env_vars:
+                for ev in env_vars:
+                    e = ev.to_dict()
+                    env_values.append([
+                        str(e.get("name", "N/A")), str(e.get("value", "N/A")), str(e.get("scope", "N/A"))
+                    ])
+            else:
+                env_values.append(["No environment variables detected.", "", ""])
+            self.devenv_env_vars_table.update_values(env_values)
+
+        # Update Identified Issues Table
+        if self.devenv_issues_table:
+            issue_cols_list = ["Severity", "Description", "Category", "Component ID", "Related Path"]
+            issue_values = [issue_cols_list]
+            if issues:
+                for issue in issues:
+                    i = issue.to_dict()
+                    issue_values.append([
+                        str(i.get("severity", "N/A")), str(i.get("description", "N/A")), str(i.get("category", "N/A")),
+                        str(i.get("component_id", "N/A")), str(i.get("related_path", "N/A"))
+                    ])
+            else:
+                issue_values.append(["No issues identified.", "", "", "", ""])
+            self.devenv_issues_table.update_values(issue_values)
+
+    def devenv_audit_error(self, error_exception):
+        error_message = f"DevEnv Audit scan failed: {error_exception}"
+        logging.error(error_message, exc_info=True)
+        if self.status_bar:
+            self.status_bar.configure(text=error_message)
+        
+        show_custom_messagebox(
+            self, 
+            "DevEnv Audit Error", 
+            f"An error occurred during the Developer Environment Audit: {error_exception}",
+            dialog_type="error"
+        )
+        # Optionally, update the devenv tables to show an error message
+        self._clear_devenv_tables() # Clear tables first
+        if self.devenv_components_table:
+             self.devenv_components_table.add_row([f"Error: {error_exception}", "", "", "", "", "", "", ""])
+
+
+    def finalize_scan_ui_state(self):
+        self.scan_in_progress = False
+        self._update_action_buttons_state(customtkinter.NORMAL)
+
+    def update_inventory_display(self, software_list):
+        if self.inventory_table:
+            header = [
         except Exception as e:
             logging.error(
                 f"Failed to save system inventory report to {output_dir}: {e}",
