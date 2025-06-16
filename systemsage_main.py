@@ -781,6 +781,10 @@ class SystemSageApp(customtkinter.CTk):
             side=tk.RIGHT, padx=action_button_padx, pady=action_button_pady
         )
 
+    def quit_app(self):
+        """Closes the application."""
+        self.destroy()
+
        # Main TabView
         self.main_notebook = customtkinter.CTkTabview(self, corner_radius=self.corner_radius_soft, border_width=0)
         self.main_notebook.pack(expand=True, fill="both", padx=self.padding_large, pady=(self.padding_std, self.padding_large))
@@ -1438,6 +1442,8 @@ class SystemSageApp(customtkinter.CTk):
             with open(full_path, "w", encoding="utf-8") as f:
                 json.dump(report_data, f, ensure_ascii=False, indent=4)
             logging.info(f"System inventory report successfully saved to {full_path}")
+        except Exception as e:
+            logging.error(f"Error saving system inventory report: {e}")
 
     # --- DevEnv Audit Scan Methods ---
     def _clear_devenv_tables(self):
@@ -1472,13 +1478,12 @@ class SystemSageApp(customtkinter.CTk):
         thread = Thread(target=self.run_devenv_audit_thread, daemon=True)
         thread.start()
 
-       def run_devenv_audit_thread(self):
+    def run_devenv_audit_thread(self): # Corrected indentation
         try:
-            scanner = EnvironmentScanner(
-                hints_file_path=SOFTWARE_HINTS_FILE, 
-                component_keywords=COMPONENT_KEYWORDS
-            )
-            components, env_vars, issues = scanner.scan_environment()
+            # EnvironmentScanner loads its own configuration internally
+            scanner = EnvironmentScanner() 
+            # Corrected method call to run_scan()
+            components, env_vars, issues = scanner.run_scan() 
          
             # Store results
             self.devenv_components_results = components if components else []
@@ -1487,24 +1492,22 @@ class SystemSageApp(customtkinter.CTk):
             
             self.after(0, self._update_devenv_audit_display_from_thread, components, env_vars, issues)
         except Exception as e:
-            logging.error(f"Error in DevEnv audit thread: {e}\n{traceback.format_exc()}")
+            logging.error(f"Error in DevEnv audit thread: {e}\\n{traceback.format_exc()}")
             self.after(0, self._devenv_audit_error_from_thread, e)
         finally:
             self.after(0, self.finalize_scan_ui_state)
 
+    def _devenv_audit_error_from_thread(self, error_exception):
+        """Helper to call devenv audit error handler from thread."""
+        # Assuming self.devenv_audit_error method is defined to handle the error
+        self.devenv_audit_error(error_exception)
+
     def _update_devenv_audit_display_from_thread(self, components, env_vars, issues):
         """Helper to call DevEnv display update from thread."""
-                    )
-            self.system_inventory_results = software_list # Store results
-            self.inventory_table.update_values(table_values)
-            # self.finalize_scan_ui_state() # This will be called by the thread's finally block
-            # if self.status_bar: # Status update moved to _update_inventory_display_from_thread
-            # self.status_bar.configure(text="System Inventory Scan completed.")
-
-    def on_ocl_profile_select_ctktable(self, selection_data):
-        selected_data_row_index = selection_data.get("row")
-        if selected_data_row_index is None:
-        self.devenv_audit_error(error_exception)
+        self.update_devenv_audit_display(components, env_vars, issues)
+        if self.status_bar:
+            self.status_bar.configure(text="Developer Environment Audit completed.")
+        # self.finalize_scan_ui_state() # Called by the thread's finally block
 
     def update_devenv_audit_display(self, components, env_vars, issues):
         # Update Components Table
@@ -1569,19 +1572,6 @@ class SystemSageApp(customtkinter.CTk):
         if self.devenv_components_table:
              self.devenv_components_table.add_row([f"Error: {error_exception}", "", "", "", "", "", "", ""])
 
-
-    def finalize_scan_ui_state(self):
-        self.scan_in_progress = False
-        self._update_action_buttons_state(customtkinter.NORMAL)
-
-    def update_inventory_display(self, software_list):
-        if self.inventory_table:
-            header = [
-        except Exception as e:
-            logging.error(
-                f"Failed to save system inventory report to {output_dir}: {e}",
-                exc_info=True,
-            )
 
     def finalize_scan_ui_state(self):
         self.scan_in_progress = False
@@ -1657,9 +1647,7 @@ class SystemSageApp(customtkinter.CTk):
         # if `self.ocl_profiles_table.values[0]` is the header.
         # However, CTkTable's `command` usually gives the index relative to data rows if header is configured.
         # Let's assume `selected_data_row_index` is the 0-based index of the *data* row clicked.
-        # So, if `self.ocl_profiles_table.values[0]` is header, data starts at `self.ocl_profiles_table.values[1]`.
-        # The clicked data row `selected_data_row_index` corresponds to `self.ocl_profiles_table.values[selected_data_row_index + 1]`.
-
+        # So, if `self.ocl_profiles_table.values[0]` is header, data starts at `self.ocl_profiles_table.values[selected_data_row_index + 1]`.
         data_list_index = selected_data_row_index + 1 # Index in the .values list, assuming header is values[0]
 
         if self.ocl_profiles_table is None or not hasattr(self.ocl_profiles_table, "values"):
@@ -1709,8 +1697,22 @@ class SystemSageApp(customtkinter.CTk):
                         for category, cat_settings_list in hierarchical_settings.items():
                             display_text += f"  Category: {category}\\n"
                             if cat_settings_list:
-                                for setting_dict in cat_settings_list:
-                                    display_text += f"    - {setting_dict.get('setting_name', 'N/A')}: {setting_dict.get('setting_value', 'N/A')} (Type: {setting_dict.get('value_type', 'str')})\\n"
+                                for setting_entry in cat_settings_list: # Renamed to setting_entry
+                                    if isinstance(setting_entry, dict):
+                                        setting_name = setting_entry.get('setting_name', 'N/A')
+                                        setting_value = setting_entry.get('setting_value', 'N/A')
+                                        value_type = setting_entry.get('value_type', 'str')
+                                        display_text += f"    - {setting_name}: {setting_value} (Type: {value_type})\\n"
+                                    elif isinstance(setting_entry, str):
+                                        display_text += f"    - {setting_entry}\\n"
+                                    else: # Attempt to treat as an object (e.g., BIOSSetting instance)
+                                        try:
+                                            setting_name = getattr(setting_entry, 'setting_name', 'N/A')
+                                            setting_value = getattr(setting_entry, 'setting_value', 'N/A')
+                                            value_type = getattr(setting_entry, 'value_type', 'str')
+                                            display_text += f"    - {setting_name}: {setting_value} (Type: {value_type})\\n"
+                                        except AttributeError:
+                                            display_text += f"    - Unknown setting format: {str(setting_entry)}\\n"
                             else:
                                 display_text += "    (No settings in this category)\\n"
                     else:
