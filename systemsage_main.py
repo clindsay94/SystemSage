@@ -1,7 +1,4 @@
-# %%
 # System Sage - Integrated System Utility V2.5
-lf.action_bar_frame.pack(side="top", fill="x")
-
 # This script provides system inventory, developer environment auditing,
 # and other utilities.
 # V2.5:
@@ -203,8 +200,10 @@ if IS_WINDOWS:
         logging.error(
             "Failed to import winreg on a Windows system. System Inventory will not work."
         )
-        IS_WINDOWS = False
-
+        # Ensure winreg is None or a mock if import fails, to prevent unbound errors later
+        winreg = None # type: ignore 
+else:
+    winreg = None # type: ignore
 
 # --- Configuration Loading Function ---
 def load_json_config(filename, default_data):
@@ -268,7 +267,7 @@ def get_hkey_name(hkey_root):
     Returns the string name of a Windows registry hive constant.
     If the hive is unknown, returns 'UNKNOWN_HIVE'.
     """
-    if not IS_WINDOWS:
+    if not IS_WINDOWS or not winreg: # Added check for winreg
         return "N/A"
     if hkey_root == winreg.HKEY_LOCAL_MACHINE:
         return "HKEY_LOCAL_MACHINE"  
@@ -329,23 +328,24 @@ def get_installed_software(calculate_disk_usage_flag):
     processed_entries = set()
     registry_paths = [
         (
-            winreg.HKEY_LOCAL_MACHINE,
+            winreg.HKEY_LOCAL_MACHINE, # type: ignore
             r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
             "HKLM (64-bit)",
-        ),  # type: ignore
+        ), 
         (
-            winreg.HKEY_LOCAL_MACHINE,
+            winreg.HKEY_LOCAL_MACHINE, # type: ignore
             r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
             "HKLM (32-bit)",
-        ),  # type: ignore
+        ), 
         (
-            winreg.HKEY_CURRENT_USER,++++++++++++++++++++++++++++++++++++++++++++++++++
+            winreg.HKEY_CURRENT_USER, # Corrected the line with plus signs
             r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
             "HKCU",
         ),
     ]  # type: ignore
 
     for hkey_root, path_suffix, hive_display_name in registry_paths:
+        if not winreg: continue # Skip if winreg is not available
         try:
             with winreg.OpenKey(hkey_root, path_suffix) as uninstall_key:  # type: ignore
                 for i in range(winreg.QueryInfoKey(uninstall_key)[0]):  # type: ignore
@@ -696,7 +696,7 @@ class SystemSageApp(customtkinter.CTk):
     def _setup_ui(self):
 
         # Action Bar
-       self.action_bar_frame = customtkinter.CTkFrame(self, corner_radius=0, height=50, border_width=0)
+        self.action_bar_frame = customtkinter.CTkFrame(self, corner_radius=0, height=50, border_width=0) # Corrected indentation
         self.action_bar_frame.pack(side=tk.TOP, fill=tk.X, padx=0, pady=(0, self.padding_std))
 
         action_button_height = 30
@@ -893,7 +893,7 @@ class SystemSageApp(customtkinter.CTk):
             row=2,
             column=0,
             padx=self.padding_large,
-            pady=(self.padding_std, self.padding_large),
+            pady=self.padding_std,
             sticky="nsew",
         )
         outer_issues_ctk_frame.grid_columnconfigure(0, weight=1)
@@ -937,11 +937,11 @@ class SystemSageApp(customtkinter.CTk):
         devenv_tab_frame.grid_rowconfigure(2, weight=1)
 
         # --- Overclocker's Logbook Tab ---
-          ocl_tab_frame = self.main_notebook.tab("Overclocker's Logbook")
+        ocl_tab_frame = self.main_notebook.tab("Overclocker's Logbook") # Corrected indentation
         ocl_tab_frame.grid_columnconfigure(0, weight=1)
         ocl_tab_frame.grid_rowconfigure(0, weight=2)
         ocl_tab_frame.grid_rowconfigure(1, weight=1)
-         ocl_top_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
+        ocl_top_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1) # Corrected indentation
         ocl_top_frame.grid(row=0, column=0, padx=self.padding_large, pady=(self.padding_large, self.padding_std), sticky="nsew")
         ocl_top_frame.grid_columnconfigure(0, weight=1)
         ocl_top_frame.grid_rowconfigure(1, weight=1)
@@ -970,7 +970,7 @@ class SystemSageApp(customtkinter.CTk):
             master=inner_profiles_list_ctk_frame,
             column=3,
             values=initial_ocl_values,
-            command=self.on_ocl_profile_select_ctktable,
+            command=self.on_ocl_profile_select_ctktable, # This method is defined later, usually fine for linters
             font=self.default_font,
             corner_radius=self.corner_radius_std,
             hover_color=self.button_hover_color,
@@ -979,7 +979,7 @@ class SystemSageApp(customtkinter.CTk):
             expand=True, fill="both", padx=self.padding_std, pady=self.padding_std
         )
 
-         ocl_bottom_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
+        ocl_bottom_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1) # Corrected indentation
         ocl_bottom_frame.grid(row=1, column=0, padx=self.padding_large, pady=(self.padding_std, self.padding_large), sticky="nsew")
         ocl_bottom_frame.grid_columnconfigure(0, weight=1)
         ocl_bottom_frame.grid_rowconfigure(0, weight=1)
@@ -1064,25 +1064,102 @@ class SystemSageApp(customtkinter.CTk):
         """Opens the OCL Profile Editor to create a new profile."""
         logging.info("Opening OCL Profile Editor in 'create' mode.")
         
-        # Create a blank profile object to pass to the editor
         new_profile_obj = Profile(name="New BIOS Profile", description="A detailed BIOS profile.")
         
-        # The editor will call `_save_profile_from_editor` upon save
-        OclProfileEditor(master=self, mode='create', profile_obj=new_profile_obj, callback=self._save_profile_from_editor)
+        editor = OclProfileEditor(master=self, mode='create', profile_obj=new_profile_obj, callback=self._save_profile_from_editor)
+        # editor will be garbage collected if not assigned or kept alive, but CTkToplevel might manage its own lifecycle.
+
+    def refresh_ocl_profiles_list(self):
+        """Refreshes the list of OCL profiles in the GUI table."""
+        if self.ocl_profiles_table is None:
+            logging.warning("refresh_ocl_profiles_list: ocl_profiles_table is not initialized.")
+            return
+
+        # Clear existing rows except header
+        for i in range(len(self.ocl_profiles_table.values) -1, 0, -1):
+            self.ocl_profiles_table.delete_row(i)
+        
+        # If only header exists and it's not the default, reset it (optional, good for robustness)
+        if len(self.ocl_profiles_table.values) == 0 or self.ocl_profiles_table.values[0] != ["ID", "Profile Name", "Last Modified"]:
+            self.ocl_profiles_table.update_values([["ID", "Profile Name", "Last Modified"]])
+
+
+        try:
+            profiles = ocl_api.get_all_profiles()
+            if profiles:
+                for profile in profiles:
+                    # Ensure last_modified is a string, format if it's a date object
+                    last_modified_str = profile.get('last_modified', 'N/A')
+                    if isinstance(last_modified_str, datetime.datetime):
+                        last_modified_str = last_modified_str.strftime('%Y-%m-%d %H:%M:%S')
+                    
+                    self.ocl_profiles_table.add_row([
+                        str(profile.get('id', 'N/A')),
+                        str(profile.get('name', 'N/A')),
+                        last_modified_str
+                    ])
+                if self.status_bar: self.status_bar.configure(text=f"{len(profiles)} OCL profiles loaded.")
+            else:
+                # Add a placeholder row if no profiles are found
+                self.ocl_profiles_table.add_row(["-", "No profiles found", "-"])
+                if self.status_bar: self.status_bar.configure(text="No OCL profiles found in the database.")
+            
+            # After refreshing, clear selection and details view
+            self.selected_ocl_profile_id = None
+            if self.ocl_profile_details_text:
+                self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
+                self.ocl_profile_details_text.delete("0.0", tk.END)
+                self.ocl_profile_details_text.insert("0.0", "Select a profile to view details.")
+                self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
+
+        except Exception as e:
+            logging.error(f"Error refreshing OCL profiles list: {e}", exc_info=True)
+            if self.status_bar: self.status_bar.configure(text="Error loading OCL profiles.")
+            # Optionally show a messagebox
+            show_custom_messagebox(self, "OCL Error", f"Could not refresh profiles: {e}", "error")
+            # Add a placeholder error row
+            if len(self.ocl_profiles_table.values) <= 1: # if only header or empty
+                 self.ocl_profiles_table.add_row(["-", "Error loading profiles", "-"])
+
+
+    def inventory_scan_error(self, error_exception):
+        """Handles errors that occur during the system inventory scan thread."""
+        error_message = f"System Inventory scan failed: {error_exception}"
+        logging.error(error_message, exc_info=True) # Log with stack trace
+        if self.status_bar:
+            self.status_bar.configure(text=error_message)
+        
+        # Ensure UI elements are reset to a usable state
+        self.finalize_scan_ui_state() # This re-enables buttons etc.
+
+        # Inform the user
+        show_custom_messagebox(
+            self, 
+            "Scan Error", 
+            f"An error occurred during the System Inventory scan: {error_exception}",
+            dialog_type="error"
+        )
+        # Optionally, update the inventory display to show an error message
+        if self.inventory_table:
+            self.update_inventory_display([{"DisplayName": "Error during scan", "Remarks": str(error_exception), "Category": "Error"}])
+
 
     def import_bios_profile(self):
         """Imports a BIOS profile from a JSON file."""
+        # Directly use the globally managed CTkFileDialog variable
+        # It's either the real CTkFileDialog or the _BaseCTkFileDialogPlaceholder
         dialog = CTkFileDialog(master=self, title="Select BIOS Profile JSON File", filetypes=[("JSON files", "*.json")])
         filepath = dialog.get()
 
-        if not filepath:
-            logging.info("BIOS profile import cancelled.")
+        if not filepath: # Placeholder's get() returns None, real one returns None on cancel
+            logging.info("BIOS profile import cancelled or file dialog not available.")
+            if isinstance(CTkFileDialog, _BaseCTkFileDialogPlaceholder): # Check if it was the placeholder
+                 show_custom_messagebox(self, "File Dialog Info", "File selection was cancelled or the dialog is not fully functional.", "info")
             return
 
         try:
             profile_obj = load_from_json_file(filepath)
             if profile_obj:
-                # We have a Profile object, now save it to the database via the API
                 flat_settings = Profile.to_flat_list(profile_obj.settings)
                 
                 profile_id = ocl_api.create_new_profile(
@@ -1115,18 +1192,15 @@ class SystemSageApp(customtkinter.CTk):
             show_custom_messagebox(self, "Error", f"Could not fetch details for profile ID: {self.selected_ocl_profile_id}.", "error")
             return
 
-        # Create a Profile object from the database details
         profile_to_edit = Profile(
-            name=details.get("name"),
-            description=details.get("description"),
+            name=str(details.get("name", "Default Name")), # Ensure string type
+            description=str(details.get("description", "")), # Ensure string type
             profile_id=details.get("id")
         )
-        # Convert flat settings list from DB to hierarchical dict for the editor
         flat_settings_from_db = details.get("settings", [])
         profile_to_edit.settings = Profile.from_flat_list(flat_settings_from_db)
         
-        # Pass this object to the editor
-        OclProfileEditor(master=self, mode='edit', profile_obj=profile_to_edit, callback=self._save_profile_from_editor)
+        editor = OclProfileEditor(master=self, mode='edit', profile_obj=profile_to_edit, callback=self._save_profile_from_editor)
 
     def _save_profile_from_editor(self, profile_obj: Profile, mode: str): # Added mode parameter
         """Callback function for the OclProfileEditor to save data."""
@@ -1176,6 +1250,71 @@ class SystemSageApp(customtkinter.CTk):
         except Exception as e:
             logging.error(f"Failed to save profile from editor (mode: {mode}): {e}", exc_info=True)
             show_custom_messagebox(self, "Save Error", f"Could not save the profile to the database: {e}", "error")
+
+    def _reselect_ocl_profile_after_update(self):
+        """Refreshes the OCL profile details display area for the currently selected profile."""
+        if self.selected_ocl_profile_id is None:
+            if self.ocl_profile_details_text:
+                self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
+                self.ocl_profile_details_text.delete("0.0", tk.END)
+                self.ocl_profile_details_text.insert("0.0", "Select a profile to view details.")
+                self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
+            return
+
+        details = ocl_api.get_profile_details(self.selected_ocl_profile_id)
+        if self.ocl_profile_details_text:
+            self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
+            self.ocl_profile_details_text.delete("0.0", tk.END)
+            if details:
+                display_text = f"Profile: {details.get('name', 'N/A')} (ID: {details.get('id')})\\n"
+                display_text += f"Description: {details.get('description', 'N/A')}\\n\\n"
+                display_text += "Settings:\\n"
+                if details.get("settings"):
+                    for setting in details.get("settings", []):
+                        display_text += f"  - {setting.get('category', 'N/A')} -> {setting.get('setting_name', 'N/A')}: {setting.get('setting_value', 'N/A')} (Type: {setting.get('value_type', 'str')})\\n"
+                else:
+                    display_text += "  (No settings for this profile)\\n"
+                display_text += "\\nLogs:\\n"
+                if details.get("logs"):
+                    for log_entry in details.get("logs", []):
+                        display_text += f"  - [{log_entry.get('timestamp', 'N/A')}]: {log_entry.get('log_text', 'N/A')}\\n"
+                else:
+                    display_text += "  (No logs for this profile)\\n"
+                self.ocl_profile_details_text.insert("0.0", display_text)
+            else:
+                self.ocl_profile_details_text.insert("0.0", f"Could not retrieve details for profile ID: {self.selected_ocl_profile_id}. It may have been deleted.")
+                self.selected_ocl_profile_id = None # Clear selection if invalid
+            self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
+
+    def update_selected_ocl_profile(self):
+        """Adds a new log entry to the selected OCL profile."""
+        if self.selected_ocl_profile_id is None:
+            show_custom_messagebox(self, "No Profile Selected", "Please select a profile to add a log to.", "warning")
+            return
+
+        dialog = customtkinter.CTkInputDialog(
+            text="Enter log message:", 
+            title="Add Log Entry"
+        )
+        # This method might need to be called on self (the root window) or a Toplevel if SystemSageApp is the root.
+        # If CTkInputDialog needs a master, it would be 'self'. Assuming it works globally or self is implicit.
+        log_text = dialog.get_input() 
+
+        if log_text: # User entered something and didn't cancel
+            try:
+                success = ocl_api.add_log_to_profile(self.selected_ocl_profile_id, log_text)
+                if success:
+                    show_custom_messagebox(self, "Log Added", "Log entry added successfully.", "info")
+                    self.refresh_ocl_profiles_list() # Refresh list (for Last Modified)
+                    # Schedule the detail refresh after the list has had a chance to update
+                    self.after(150, self._reselect_ocl_profile_after_update) 
+                else:
+                    show_custom_messagebox(self, "Error", "Failed to add log entry to the database.", "error")
+            except Exception as e:
+                logging.error(f"Error adding log entry: {e}", exc_info=True)
+                show_custom_messagebox(self, "Error", f"An unexpected error occurred while adding log: {e}", "error")
+        else:
+            logging.info("Add log entry cancelled by user.")
 
     # --- DEPRECATED METHOD ---
     # We no longer need this complex, dialog-based method.
@@ -1330,12 +1469,6 @@ class SystemSageApp(customtkinter.CTk):
 
             self.inventory_table.update_values(table_values)
     def on_ocl_profile_select_ctktable(self, selection_data):
-        # ... (This method needs a slight tweak to display the new data format better) ...
-        # ... (Existing selection logic to get profile_id is fine) ...
-        # The existing implementation of on_ocl_profile_select_ctktable already correctly uses
-        # Profile.from_flat_list to convert DB settings for display, so it should be fine.
-        # I will ensure the display part is robust.
-
         selected_data_row_index = selection_data.get("row")
         if selected_data_row_index is None:
             logging.debug("on_ocl_profile_select_ctktable: No row index in selection_data.")
@@ -1344,24 +1477,31 @@ class SystemSageApp(customtkinter.CTk):
         profile_id_val_str = None
         selected_row_values = None
         
-        data_list_index = selected_data_row_index + 1 # Assuming header is at self.ocl_profiles_table.values[0]
+        # The CTkTable returns the index of the clicked row in the currently displayed data.
+        # If the table has a header row at index 0 of its internal 'values' list, 
+        # and the user clicks the first data row, 'selected_data_row_index' will be 0.
+        # The actual data in `self.ocl_profiles_table.values` would be at `selected_data_row_index + 1`
+        # if `self.ocl_profiles_table.values[0]` is the header.
+        # However, CTkTable's `command` usually gives the index relative to data rows if header is configured.
+        # Let's assume `selected_data_row_index` is the 0-based index of the *data* row clicked.
+        # So, if `self.ocl_profiles_table.values[0]` is header, data starts at `self.ocl_profiles_table.values[1]`.
+        # The clicked data row `selected_data_row_index` corresponds to `self.ocl_profiles_table.values[selected_data_row_index + 1]`.
+
+        data_list_index = selected_data_row_index + 1 # Index in the .values list, assuming header is values[0]
 
         if self.ocl_profiles_table is None or not hasattr(self.ocl_profiles_table, "values"):
             logging.warning("on_ocl_profile_select_ctktable: ocl_profiles_table is not initialized or has no values.")
             return
 
-        if len(self.ocl_profiles_table.values) <= 1: 
-            logging.info("on_ocl_profile_select_ctktable: OCL profiles table is empty or contains only header.")
+        if not (1 <= data_list_index < len(self.ocl_profiles_table.values)): 
+            logging.warning(f"on_ocl_profile_select_ctktable: Selection index {selected_data_row_index} (data list index {data_list_index}) is out of bounds for table with {len(self.ocl_profiles_table.values)} total rows (incl. header).")
+            # This can happen if the table is empty or only has a header and it's clicked.
             self.selected_ocl_profile_id = None
             if self.ocl_profile_details_text:
                 self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
                 self.ocl_profile_details_text.delete("0.0", tk.END)
-                self.ocl_profile_details_text.insert("0.0", "No profiles available or table is empty.")
+                self.ocl_profile_details_text.insert("0.0", "No profile selected or table is empty.")
                 self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
-            return
-
-        if not (1 <= data_list_index < len(self.ocl_profiles_table.values)):
-            logging.warning(f"on_ocl_profile_select_ctktable: Selection index {selected_data_row_index} (data list index {data_list_index}) is out of bounds.")
             return
         
         try:
@@ -1369,9 +1509,8 @@ class SystemSageApp(customtkinter.CTk):
             profile_id_val_str = selected_row_values[0] 
 
             if not str(profile_id_val_str).isdigit():
-                logging.info(f"on_ocl_profile_select_ctktable: Non-data row clicked. Content: '{profile_id_val_str}'")
+                logging.info(f"on_ocl_profile_select_ctktable: Non-data row clicked or invalid ID. Content: '{profile_id_val_str}'")
                 self.selected_ocl_profile_id = None
-                # ... (rest of non-data row handling)
                 if self.ocl_profile_details_text:
                     self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
                     self.ocl_profile_details_text.delete("0.0", tk.END)
@@ -1387,59 +1526,63 @@ class SystemSageApp(customtkinter.CTk):
                 self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
                 self.ocl_profile_details_text.delete("0.0", tk.END)
                 if details:
-                    # Convert flat settings from DB to hierarchical for display
                     hierarchical_settings = Profile.from_flat_list(details.get("settings", []))
 
                     display_text = f"Profile: {details.get('name', 'N/A')} (ID: {details.get('id')})\\n"
                     display_text += f"Description: {details.get('description', 'N/A')}\\n\\n"
 
                     display_text += "Settings:\\n"
-                    if details.get("settings"):
-                        for setting in details.get("settings", []):
-                            display_text += f"  - {setting.get('category', 'N/A')} -> {setting.get('setting_name', 'N/A')}: {setting.get('setting_value', 'N/A')} (Type: {setting.get('value_type', 'str')})\\n"
+                    if hierarchical_settings:
+                        for category, cat_settings_list in hierarchical_settings.items():
+                            display_text += f"  Category: {category}\\n"
+                            if cat_settings_list:
+                                for setting_dict in cat_settings_list:
+                                    display_text += f"    - {setting_dict.get('setting_name', 'N/A')}: {setting_dict.get('setting_value', 'N/A')} (Type: {setting_dict.get('value_type', 'str')})\\n"
+                            else:
+                                display_text += "    (No settings in this category)\\n"
                     else:
-                        display_text += "  (No settings for this profile)\\n"
+                        display_text += "  (No settings defined for this profile)\\n"
 
                     display_text += "\\nLogs:\\n"
                     if details.get("logs"):
-                        for log in details.get("logs", []):
-                            display_text += f"  - [{log.get('timestamp', 'N/A')}]: {log.get('log_text', 'N/A')}\\n"
+                        for log_entry in details.get("logs", []): # Ensure 'log_entry' is used
+                            display_text += f"  - [{log_entry.get('timestamp', 'N/A')}]: {log_entry.get('log_text', 'N/A')}\\n"
                     else:
                         display_text += "  (No logs for this profile)\\n"
 
                     self.ocl_profile_details_text.insert("0.0", display_text)
                 else:
                     self.ocl_profile_details_text.insert("0.0", f"No details found for profile ID: {self.selected_ocl_profile_id}")
+                    self.selected_ocl_profile_id = None # Clear selection if details not found
                 self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
         except ValueError:
-            # ... (existing error handling) ...
             logging.error(f"Error converting profile ID '{profile_id_val_str}' to int.", exc_info=True)
             show_custom_messagebox(self, "OCL Error", f"Could not process profile ID: '{profile_id_val_str}'.", dialog_type="error")
             self.selected_ocl_profile_id = None
         except IndexError:
-            # ... (existing error handling) ...
             logging.error(f"Error accessing profile data at index {data_list_index}. Row content: {selected_row_values if selected_row_values else 'Unknown'}", exc_info=True)
             show_custom_messagebox(self, "OCL Error", "Could not retrieve all data for the selected profile row.", dialog_type="error")
             self.selected_ocl_profile_id = None
         except Exception as e:
-            # ... (existing error handling) ...
             logging.error(f"Unexpected error processing OCL profile selection: {e}", exc_info=True)
             show_custom_messagebox(self, "OCL Error", f"An unexpected error occurred: {e}", dialog_type="error")
             self.selected_ocl_profile_id = None
 
     def save_combined_report(self):
+        # Directly use the globally managed CTkFileDialog variable
         dialog = CTkFileDialog(
             master=self,
             title="Select Output Directory for Reports",
-            open_folder=True,
+            open_folder=True, # This indicates a directory selection dialog
             initialdir=os.path.abspath(DEFAULT_OUTPUT_DIR),
         )
         output_dir = dialog.get()
 
-        if not output_dir:
-            show_custom_messagebox(
-                self, "Cancelled", "Save report cancelled.", dialog_type="info"
-            )
+        if not output_dir: # Placeholder's get() returns None, real one returns None on cancel
+            logging.info("Save report cancelled or file dialog not available.")
+            # Optionally, inform if it was the placeholder, though it logs itself.
+            if isinstance(CTkFileDialog, _BaseCTkFileDialogPlaceholder):
+                 show_custom_messagebox(self, "File Dialog Info", "Directory selection was cancelled or the dialog is not fully functional.", "info")
             return
         try:
             md_include_components = (
@@ -1459,19 +1602,25 @@ class SystemSageApp(customtkinter.CTk):
                 or self.devenv_env_vars_results
                 or self.devenv_issues_results
             ):
-                sys_inv_data_for_report = []
+                sys_inv_data_for_report = [] # Do not include placeholder if other data exists
+            
+            # Ensure devenv results are handled correctly if they are None or empty
+            devenv_components = self.devenv_components_results if self.devenv_components_results else []
+            devenv_env_vars = self.devenv_env_vars_results if self.devenv_env_vars_results else []
+            devenv_issues = self.devenv_issues_results if self.devenv_issues_results else []
+
             output_to_json_combined(
                 sys_inv_data_for_report,
-                self.devenv_components_results,
-                self.devenv_env_vars_results,
-                self.devenv_issues_results,
+                devenv_components, # Pass potentially empty lists
+                devenv_env_vars,
+                devenv_issues,
                 output_dir,
             )
             output_to_markdown_combined(
                 sys_inv_data_for_report,
-                self.devenv_components_results,
-                self.devenv_env_vars_results,
-                self.devenv_issues_results,
+                devenv_components,
+                devenv_env_vars,
+                devenv_issues,
                 output_dir,
                 include_system_sage_components_flag=md_include_components,
             )
@@ -1483,27 +1632,11 @@ class SystemSageApp(customtkinter.CTk):
             )
         except Exception as e:
             logging.error(
-                f"Error saving reports: {e}\n{traceback.format_exc()}", exc_info=True
+                f"Error saving reports: {e}\\n{traceback.format_exc()}", exc_info=True # Ensure full traceback is logged
             )
             show_custom_messagebox(
                 self, "Save Error", f"Failed to save reports: {e}", dialog_type="error"
             )
-
-    def quit_app(self):
-        if self.scan_in_progress:
-            # For simplicity, directly destroying. A real app might use a custom dialog for confirmation.
-            # show_custom_messagebox(self, "Quit Confirmation", "A scan is currently in progress. Are you sure you want to quit?", dialog_type="warning", confirm_callback=self._quit_app_confirmed)
-            # For now, let's assume the user confirms or we decide to quit anyway.
-            # If a confirm_callback was implemented for show_custom_messagebox, it would handle self.destroy()
-            # Since it's not, and to avoid hanging, we'll just destroy.
-            logging.warning("Quitting while scan in progress (simplified handling).")
-            self.destroy()
-        else:
-            self.destroy()
-
-    # def _quit_app_confirmed(self): # This method was referenced but not defined.
-    #     self.destroy()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
