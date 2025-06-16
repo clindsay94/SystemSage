@@ -131,6 +131,7 @@ class _BaseCTkFileDialogPlaceholder:
         self.title = title
         self.open_folder = open_folder
         self.initialdir = initialdir
+        self.path = None  # Add path attribute to the placeholder
         log_msg = (
             "Placeholder CTkFileDialog instantiated. Real import might have failed."
         )
@@ -158,14 +159,14 @@ class _BaseCTkFileDialogPlaceholder:
 
     def get(self):
         logging.error("Placeholder CTkFileDialog.get() called. Returning None.")
-        return None
+        return self.path # Return self.path for consistency, though it will be None
 
 
 CTkFileDialog = _BaseCTkFileDialogPlaceholder
 
 try:
-    # Attempt to import the class using the common import pattern
-    from CTkFileDialog import CTkFileDialog as RealCTkFileDialog
+    # Attempt to import the class from the correct module within the package
+    from CTkFileDialog.ctk_file_dialog import CTkFileDialog as RealCTkFileDialog
 
     # Ensure what we imported is actually callable (a class)
     if callable(RealCTkFileDialog):
@@ -1176,8 +1177,8 @@ class SystemSageApp(customtkinter.CTk):
         """Imports a BIOS profile from a JSON file."""
         # Directly use the globally managed CTkFileDialog variable
         # It's either the real CTkFileDialog or the _BaseCTkFileDialogPlaceholder
-        dialog = CTkFileDialog(master=self, title="Select BIOS Profile JSON File", filetypes=[("JSON files", "*.json")])
-        filepath = dialog.get()
+        dialog = CTkFileDialog(title="Select BIOS Profile JSON File") # Removed master, filetypes
+        filepath = dialog.path # Access .path directly
 
         if not filepath: # Placeholder's get() returns None, real one returns None on cancel
             logging.info("BIOS profile import cancelled or file dialog not available.")
@@ -1714,7 +1715,7 @@ class SystemSageApp(customtkinter.CTk):
                                         except AttributeError:
                                             display_text += f"    - Unknown setting format: {str(setting_entry)}\\n"
                             else:
-                                display_text += "    (No settings in this category)\\n"
+                                display_text += "       (No settings in this category)\\n"
                     else:
                         display_text += "  (No settings defined for this profile)\\n"
 
@@ -1746,12 +1747,9 @@ class SystemSageApp(customtkinter.CTk):
     def save_combined_report(self):
         # Directly use the globally managed CTkFileDialog variable
         dialog = CTkFileDialog(
-            master=self,
-            title="Select Output Directory for Reports",
-            open_folder=True, # This indicates a directory selection dialog
-            initialdir=os.path.abspath(DEFAULT_OUTPUT_DIR),
-        )
-        output_dir = dialog.get()
+            title="Select Output Directory", open_folder=True
+        ) # Removed master
+        output_dir = dialog.path # Access .path directly
 
         if not output_dir: # Placeholder's get() returns None, real one returns None on cancel
             logging.info("Save report cancelled or file dialog not available.")
@@ -1812,81 +1810,3 @@ class SystemSageApp(customtkinter.CTk):
             show_custom_messagebox(
                 self, "Save Error", f"Failed to save reports: {e}", dialog_type="error"
             )
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="System Sage - Integrated System Utility V2.0"
-    )
-    parser.add_argument(
-        "--no-disk-usage",
-        action="store_false",
-        dest="calculate_disk_usage",
-        default=DEFAULT_CALCULATE_DISK_USAGE,
-        help="Disable disk usage calculation for System Inventory.",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=str,
-        default=DEFAULT_OUTPUT_DIR,
-        help=f"Default directory for output files (default: {DEFAULT_OUTPUT_DIR}).",
-    )
-    markdown_components_group = parser.add_mutually_exclusive_group()
-    markdown_components_group.add_argument(
-        "--md-include-components",
-        action="store_true",
-        dest="markdown_include_components_flag",
-        default=None,
-        help="Include components/drivers in Markdown report.",
-    )
-    markdown_components_group.add_argument(
-        "--md-no-components",
-        action="store_false",
-        dest="markdown_include_components_flag",
-        default=None,
-        help="Exclude components/drivers from Markdown report.",
-    )
-    args = parser.parse_args()
-    if args.markdown_include_components_flag is None:
-        args.markdown_include_components_flag = DEFAULT_MARKDOWN_INCLUDE_COMPONENTS
-    log_level = logging.INFO
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s - %(name)s [%(levelname)s] - %(threadName)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        handlers=[logging.StreamHandler(sys.stdout)],
-    )
-
-    try:
-        os.makedirs(DEFAULT_OUTPUT_DIR, exist_ok=True)
-    except Exception as e:
-        logging.error(
-            f"Error creating default output directory '{DEFAULT_OUTPUT_DIR}': {e}",
-            exc_info=True,
-        )
-
-    try:
-        ocl_db_path = resource_path(
-            os.path.join("ocl_module_src", "system_sage_olb.db")
-        )
-        os.makedirs(os.path.dirname(ocl_db_path), exist_ok=True)
-        logging.info(
-            f"OCL DB expected at: {ocl_db_path} (actual path handled by ocl_module)"
-        )
-    except Exception as e:
-        logging.error(f"Error preparing OCL DB path: {e}", exc_info=True)
-
-    try:
-        app = SystemSageApp(cli_args=args)
-        app.mainloop()
-    except Exception as e:
-        logging.critical("GUI Crashed: %s", e, exc_info=True)
-        try:
-            from tkinter import messagebox
-
-            root_err = tk.Tk()
-            root_err.withdraw()
-            messagebox.showerror("Fatal GUI Error", f"A critical error occurred: {e}")
-            root_err.destroy()
-        except Exception as critical_e:
-            print(f"CRITICAL FALLBACK ERROR: {critical_e}", file=sys.stderr)
-            print(f"Original critical error: {e}", file=sys.stderr)
