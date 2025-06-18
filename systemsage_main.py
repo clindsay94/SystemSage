@@ -20,6 +20,7 @@ import logging
 import customtkinter
 from CTkTable import CTkTable
 # CTkFileDialog will be imported in the fallback logic below
+from tkinter import messagebox # Import messagebox explicitly
 
 # --- DevEnvAudit Imports ---
 from devenvaudit_src.scan_logic import EnvironmentScanner
@@ -1715,7 +1716,7 @@ class SystemSageApp(customtkinter.CTk):
                                         except AttributeError:
                                             display_text += f"    - Unknown setting format: {str(setting_entry)}\\n"
                             else:
-                                display_text += "       (No settings in this category)\\n"
+                                display_text += "             (No settings in this category)\\n"
                     else:
                         display_text += "  (No settings defined for this profile)\\n"
 
