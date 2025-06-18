@@ -715,9 +715,9 @@ class SystemSageApp(customtkinter.CTk):
         self.ocl_update_selected_button = None
         self.ocl_edit_profile_button = None
 
-        self._setup_ui()
-        if not IS_WINDOWS:
-            self.after(100, self.start_system_inventory_scan)
+    def quit_app(self):
+        """Closes the application."""
+        self.destroy()
 
     def _setup_ui(self):
 
@@ -783,11 +783,7 @@ class SystemSageApp(customtkinter.CTk):
             side=tk.RIGHT, padx=action_button_padx, pady=action_button_pady
         )
 
-    def quit_app(self):
-        """Closes the application."""
-        self.destroy()
-
-       # Main TabView
+       # Main TabView - MOVED HERE
         self.main_notebook = customtkinter.CTkTabview(self, corner_radius=self.corner_radius_soft, border_width=0)
         self.main_notebook.pack(expand=True, fill="both", padx=self.padding_large, pady=(self.padding_std, self.padding_large))
         self.main_notebook.add("System Inventory")
@@ -1714,13 +1710,13 @@ class SystemSageApp(customtkinter.CTk):
                                             value_type = getattr(setting_entry, 'value_type', 'str')
                                             display_text += f"    - {setting_name}: {setting_value} (Type: {value_type})\\n"
                                         except AttributeError:
-                                            display_text += f"    - Unknown setting format: {str(setting_entry)}\\n"
+                                            display_text += f"    - Unknown setting format: {str(setting_entry)}\\\\n"
                             else:
-                                display_text += "             (No settings in this category)\\n"
+                                display_text += "    (No settings in this category)\\\\n"
                     else:
-                        display_text += "  (No settings defined for this profile)\\n"
+                        display_text += "  (No settings defined for this profile)\\\\n"
 
-                    display_text += "\\nLogs:\\n"
+                    display_text += "\\\\nLogs:\\\\n"
                     if details.get("logs"):
                         for log_entry in details.get("logs", []): # Ensure 'log_entry' is used
                             display_text += f"  - [{log_entry.get('timestamp', 'N/A')}]: {log_entry.get('log_text', 'N/A')}\\n"
