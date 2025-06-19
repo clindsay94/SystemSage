@@ -7,8 +7,7 @@ It is intended to be imported and used by the main SystemSage application.
 
 import logging
 import os
-# import tkinter as tk # Not used directly and not needed if no GUI here
-# from gui_manager import MainAppWindow # <<< REMOVE THIS LINE <<<
+
 
 from config_manager import CONFIG_FILE_PATH
 from devenvaudit_src.scan_logic import (
@@ -21,11 +20,6 @@ APP_VERSION = "1.1.0"  # Corresponds to prompt version
 LOG_FILE_NAME = "devenvaudit_module.log"  # Renamed to reflect its module role
 
 
-# NOTE: If SystemSageV2.0.py handles global logging,
-#       this setup_logging might be redundant or need adjustment
-#       to ensure consistent logging for the whole application.
-#       Consider if logging should be handled by SystemSageV2.0.py's
-#       setup_logging and this module just *uses* the logger.
 def setup_logging():
     """Configures logging for the module if run standalone,
     or if the main app doesn't set up logging globally.
@@ -73,8 +67,3 @@ def get_devenvaudit_results(progress_callback=None, status_callback=None):
     return components, env_vars, issues
 
 
-# No main() function or if __name__ == "__main__": block anymore,
-# as this file is now purely a module.
-# If you wanted to keep it runnable for *testing the module logic only*
-# without the GUI, you could adapt the __main__ block to just call
-# get_devenvaudit_results and print them.

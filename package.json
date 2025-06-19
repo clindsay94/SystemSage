@@ -23,6 +23,8 @@
   },
   "homepage": "https://github.com/clindsay94/SystemSage#readme",
   "dependencies": {
-    "@material/web": "^2.3.0"
+    "@material/web": "^2.3.0",
+    "@lit/reactive-element": "^2.0.0",
+    "@lit-labs/ssr-dom-shim": "1.3.0",
   }
 }

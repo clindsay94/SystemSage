@@ -12,5 +12,869 @@
     "version_regex": "Python\\s+([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
     "env_vars": ["PYTHONHOME", "PYTHONPATH"],
     "related_files": ["Lib/site-packages"]
+  },
+  {
+    "id": "nodejs",
+    "name": "Node.js",
+    "category": "Language",
+    "executables": {
+      "Windows": ["node.exe"],
+      "Linux": ["node"],
+      "Darwin": ["node"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "v([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["NODE_HOME", "NODE_PATH"],
+    "related_files": ["lib/node_modules"]
+  },
+  {
+    "id": "java",
+    "name": "Java",
+    "category": "Language",
+    "executables": {
+      "Windows": ["java.exe", "javac.exe"],
+      "Linux": ["java", "javac"],
+      "Darwin": ["java", "javac"]
+    },
+    "version_args": [
+      "-version"
+    ],
+    "version_regex": "java version \"(.*?)\"",
+    "env_vars": [
+      "JAVA_HOME",
+      "JDK_HOME"
+    ],
+    "related_files": ["lib/tools.jar"]
+  },
+  {
+    "id": "ruby",
+    "name": "Ruby",
+    "category": "Language",
+    "executables": {
+      "Windows": ["ruby.exe"],
+      "Linux": ["ruby"],
+      "Darwin": ["ruby"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "ruby ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["RUBY_HOME", "GEM_HOME"],
+    "related_files": ["lib/ruby/gems"]
+  },
+  {
+    "id": "php",
+    "name": "PHP",
+    "category": "Language",
+    "executables": {
+      "Windows": ["php.exe"],
+      "Linux": ["php"],
+      "Darwin": ["php"]
+    },
+    "version_args": ["-v"],
+    "version_regex": "PHP ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["PHP_HOME", "PHP_INI_SCAN_DIR"],
+    "related_files": ["lib/php"]
+  },
+  {
+    "id": "go",
+    "name": "Go",
+    "category": "Language",
+    "executables": {
+      "Windows": ["go.exe"],
+      "Linux": ["go"],
+      "Darwin": ["go"]
+    },
+    "version_args": ["version"],
+    "version_regex": "go version go([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["GOROOT", "GOPATH"],
+    "related_files": ["pkg/mod"]
+  },
+  {
+    "id": "rust",
+    "name": "Rust",
+    "category": "Language",
+    "executables": {
+      "Windows": ["rustc.exe", "cargo.exe"],
+      "Linux": ["rustc", "cargo"],
+      "Darwin": ["rustc", "cargo"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "rustc ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["CARGO_HOME", "RUSTUP_HOME"],
+    "related_files": ["lib/rustlib"]
+  },
+  {
+    "id": "dotnet",
+    "name": ".NET",
+    "category": "Language",
+    "executables": {
+      "Windows": ["dotnet.exe"],
+      "Linux": ["dotnet"],
+      "Darwin": ["dotnet"]
+    },
+    "version_args": ["--version"],
+    "version_regex": ".NET SDK ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["DOTNET_ROOT", "DOTNET_CLI_HOME"],
+    "related_files": ["sdk"]
+  },
+  {
+    "id": "swift",
+    "name": "Swift",
+    "category": "Language",
+    "executables": {
+      "Windows": ["swift.exe"],
+      "Linux": ["swift"],
+      "Darwin": ["swift"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Swift version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["SWIFT_HOME", "SWIFT_PATH"],
+    "related_files": ["lib/swift"]
+  },
+  {
+    "id": "kotlin",
+    "name": "Kotlin",
+    "category": "Language",
+    "executables": {
+      "Windows": ["kotlinc.exe"],
+      "Linux": ["kotlinc"],
+      "Darwin": ["kotlinc"]
+    },
+    "version_args": ["-version"],
+    "version_regex": "Kotlin version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["KOTLIN_HOME", "KOTLIN_PATH"],
+    "related_files": ["lib/kotlin"]
+  },
+  {
+    "id": "scala",
+    "name": "Scala",
+    "category": "Language",
+    "executables": {
+      "Windows": ["scala.exe", "scalac.exe"],
+      "Linux": ["scala", "scalac"],
+      "Darwin": ["scala", "scalac"]
+    },
+    "version_args": ["-version"],
+    "version_regex": "Scala code runner version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["SCALA_HOME", "SCALA_PATH"],
+    "related_files": ["lib/scala"]
+  },
+  {
+    "id": "perl",
+    "name": "Perl",
+    "category": "Language",
+    "executables": {
+      "Windows": ["perl.exe"],
+      "Linux": ["perl"],
+      "Darwin": ["perl"]
+    },
+    "version_args": ["-v"],
+    "version_regex": "This is perl ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["PERL_HOME", "PERL5LIB"],
+    "related_files": ["lib/perl5"]
+  },
+  {
+    "id": "haskell",
+    "name": "Haskell",
+    "category": "Language",
+    "executables": {
+      "Windows": ["ghc.exe", "cabal.exe"],
+      "Linux": ["ghc", "cabal"],
+      "Darwin": ["ghc", "cabal"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "The Glorious Glasgow Haskell Compilation System, version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["GHC_HOME", "CABAL_DIR"],
+    "related_files": ["lib/ghc"]
+  },
+  {
+    "id": "elixir",
+    "name": "Elixir",
+    "category": "Language",
+    "executables": {
+      "Windows": ["elixir.bat"],
+      "Linux": ["elixir"],
+      "Darwin": ["elixir"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Elixir ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["ELIXIR_HOME", "MIX_HOME"],
+    "related_files": ["lib/elixir"]
+  },
+  {
+    "id": "typescript",
+    "name": "TypeScript",
+    "category": "Language",
+    "executables": {
+      "Windows": ["tsc.cmd"],
+      "Linux": ["tsc"],
+      "Darwin": ["tsc"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "TypeScript ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["TSC_HOME", "TSC_PATH"],
+    "related_files": ["lib/typescript"]
+  },
+  {
+    "id": "dart",
+    "name": "Dart",
+    "category": "Language",
+    "executables": {
+      "Windows": ["dart.exe"],
+      "Linux": ["dart"],
+      "Darwin": ["dart"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Dart SDK version: ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["DART_HOME", "PUB_CACHE"],
+    "related_files": ["lib/dart"]
+  },
+  {
+    "id": "lua",
+    "name": "Lua",
+    "category": "Language",
+    "executables": {
+      "Windows": ["lua.exe"],
+      "Linux": ["lua"],
+      "Darwin": ["lua"]
+    },
+    "version_args": ["-v"],
+    "version_regex": "Lua ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["LUA_PATH", "LUA_CPATH"],
+    "related_files": ["lib/lua"]
+  },
+  {
+    "id": "fsharp",
+    "name": "F#",
+    "category": "Language",
+    "executables": {
+      "Windows": ["fsharp.exe"],
+      "Linux": ["fsharp"],
+      "Darwin": ["fsharp"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "F# ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["FSHARP_HOME", "FSHARP_LIB"],
+    "related_files": ["lib/fsharp"]
+  },
+  {
+    "id": "r",
+    "name": "R",
+    "category": "Language",
+    "executables": {
+      "Windows": ["R.exe"],
+      "Linux": ["R"],
+      "Darwin": ["R"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "R version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["R_HOME", "R_LIBS"],
+    "related_files": ["lib/R"]
+  },
+  {
+    "id": "groovy",
+    "name": "Groovy",
+    "category": "Language",
+    "executables": {
+      "Windows": ["groovy.bat"],
+      "Linux": ["groovy"],
+      "Darwin": ["groovy"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Groovy ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["GROOVY_HOME", "GRAILS_HOME"],
+    "related_files": ["lib/groovy"]
+  },
+  {
+    "id": "bash",
+    "name": "Bash",
+    "category": "Shell",
+    "executables": {
+      "Windows": ["bash.exe"],
+      "Linux": ["bash"],
+      "Darwin": ["bash"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "GNU bash, version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["BASH_HOME", "BASH_ENV"],
+    "related_files": ["lib/bash"]
+  },
+  {
+    "id": "zsh",
+    "name": "Zsh",
+    "category": "Shell",
+    "executables": {
+      "Windows": ["zsh.exe"],
+      "Linux": ["zsh"],
+      "Darwin": ["zsh"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "zsh ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["ZSH_HOME", "ZDOTDIR"],
+    "related_files": ["lib/zsh"]
+  },
+  {
+    "id": "fish",
+    "name": "Fish",
+    "category": "Shell",
+    "executables": {
+      "Windows": ["fish.exe"],
+      "Linux": ["fish"],
+      "Darwin": ["fish"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "fish, version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["FISH_HOME", "FISH_CONFIG_DIR"],
+    "related_files": ["lib/fish"]
+  },
+  {
+    "id": "powershell",
+    "name": "PowerShell",
+    "category": "Shell",
+    "executables": {
+      "Windows": ["powershell.exe", "pwsh.exe"],
+      "Linux": ["pwsh"],
+      "Darwin": ["pwsh"]
+    },
+    "version_args": ["-Version"],
+    "version_regex": "PowerShell ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["POWERSHELL_HOME", "PSModulePath"],
+    "related_files": ["lib/powershell"]
+  },
+  {
+    "id": "npm",
+    "name": "npm",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["npm.cmd"],
+      "Linux": ["npm"],
+      "Darwin": ["npm"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "npm ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["NPM_HOME", "NPM_CONFIG_PATH"],
+    "related_files": ["lib/node_modules/npm"]
+  },
+  {
+    "id": "yarn",
+    "name": "Yarn",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["yarn.cmd"],
+      "Linux": ["yarn"],
+      "Darwin": ["yarn"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Yarn ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["YARN_HOME", "YARN_CONFIG_PATH"],
+    "related_files": ["lib/yarn"]
+  },
+  {
+    "id": "pip",
+    "name": "pip",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["pip.exe"],
+      "Linux": ["pip"],
+      "Darwin": ["pip"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "pip ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["PIP_HOME", "PIP_CONFIG_FILE"],
+    "related_files": ["lib/python*/site-packages/pip"]
+  },
+  {
+    "id": "composer",
+    "name": "Composer",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["composer.phar"],
+      "Linux": ["composer"],
+      "Darwin": ["composer"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Composer version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["COMPOSER_HOME", "COMPOSER_CACHE_DIR"],
+    "related_files": ["lib/composer"]
+  },
+  {
+    "id": "cargo",
+    "name": "Cargo",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["cargo.exe"],
+      "Linux": ["cargo"],
+      "Darwin": ["cargo"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "cargo ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["CARGO_HOME", "CARGO_TARGET_DIR"],
+    "related_files": ["lib/cargo"]
+  },
+  {
+    "id": "nuget",
+    "name": "NuGet",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["nuget.exe"],
+      "Linux": ["nuget"],
+      "Darwin": ["nuget"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "NuGet Version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["NUGET_HOME", "NUGET_PACKAGES"],
+    "related_files": ["lib/nuget"]
+  },
+  {
+    "id": "pipenv",
+    "name": "Pipenv",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["pipenv.exe"],
+      "Linux": ["pipenv"],
+      "Darwin": ["pipenv"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Pipenv ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["PIPENV_HOME", "PIPENV_VENV_IN_PROJECT"],
+    "related_files": ["lib/pipenv"]
+  },
+  {
+    "id": "conda",
+    "name": "Conda",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["conda.exe"],
+      "Linux": ["conda"],
+      "Darwin": ["conda"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "conda ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["CONDA_PREFIX", "CONDA_DEFAULT_ENV"],
+    "related_files": ["lib/conda"]
+  },
+  {
+    "id": "homebrew",
+    "name": "Homebrew",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["brew.exe"],
+      "Linux": ["brew"],
+      "Darwin": ["brew"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Homebrew ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["HOMEBREW_PREFIX", "HOMEBREW_CELLAR"],
+    "related_files": ["lib/brew"]
+  },
+  {
+    "id": "chocolatey",
+    "name": "Chocolatey",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["choco.exe"],
+      "Linux": ["choco"],
+      "Darwin": ["choco"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Chocolatey v([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["CHOCOLATEY_INSTALL", "CHOCOLATEY_CACHE"],
+    "related_files": ["lib/chocolatey"]
+  },
+  {
+    "id": "snap",
+    "name": "Snap",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["snap.exe"],
+      "Linux": ["snap"],
+      "Darwin": ["snap"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "snap ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["SNAP_HOME", "SNAP_USER_COMMON"],
+    "related_files": ["lib/snap"]
+  },
+  {
+    "id": "flatpak",
+    "name": "Flatpak",
+    "category": "Package Manager",
+    "executables": {
+      "Windows": ["flatpak.exe"],
+      "Linux": ["flatpak"],
+      "Darwin": ["flatpak"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Flatpak ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["FLATPAK_HOME", "FLATPAK_USER_DIR"],
+    "related_files": ["lib/flatpak"]
+  },
+  {
+    "id": "docker",
+    "name": "Docker",
+    "category": "Containerization",
+    "executables": {
+      "Windows": ["docker.exe"],
+      "Linux": ["docker"],
+      "Darwin": ["docker"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Docker version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["DOCKER_HOST", "DOCKER_TLS_VERIFY"],
+    "related_files": ["lib/docker"]
+  },
+  {
+    "id": "kubernetes",
+    "name": "Kubernetes",
+    "category": "Containerization",
+    "executables": {
+      "Windows": ["kubectl.exe"],
+      "Linux": ["kubectl"],
+      "Darwin": ["kubectl"]
+    },
+    "version_args": ["version --client"],
+    "version_regex": "Client Version: v([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["KUBECONFIG", "KUBE_HOME"],
+    "related_files": ["lib/kubernetes"]
+  },
+  {
+    "id": "terraform",
+    "name": "Terraform",
+    "category": "Infrastructure as Code",
+    "executables": {
+      "Windows": ["terraform.exe"],
+      "Linux": ["terraform"],
+      "Darwin": ["terraform"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Terraform v([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["TF_DATA_DIR", "TF_PLUGIN_CACHE_DIR"],
+    "related_files": ["lib/terraform"]
+  },
+  {
+    "id": "VS Code",
+    "name": "Visual Studio Code",
+    "category": "Code Editor",
+    "executables": {
+      "Windows": ["Code.exe", "code.cmd"],
+      "Linux": ["code"],
+      "Darwin": ["code"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Code ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["VSCODE_GIT_ASKPASS_EXTRA_ARGS", "VSCODE_CLI"],
+    "related_files": ["resources/app"]
+  },
+  {
+    "id": "Vs Code Insiders",
+    "name": "Visual Studio Code Insiders",
+    "category": "Code Editor",
+    "executables": {
+      "Windows": ["Code - Insiders.exe", "code-insiders.cmd"],
+      "Linux": ["code-insiders"],
+      "Darwin": ["code-insiders"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Code - Insiders ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["VSCODE_GIT_ASKPASS_EXTRA_ARGS", "VSCODE_CLI"],
+    "related_files": ["resources/app"]
+  },
+  {
+    "id": "Android Studio",
+    "name": "Android Studio",
+    "category": "IDE",
+    "executables": {
+      "Windows": ["studio64.exe", "studio.bat"],
+      "Linux": ["studio.sh"],
+      "Darwin": ["studio"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Android Studio ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["ANDROID_HOME", "ANDROID_SDK_ROOT"],
+    "related_files": ["resources/app"]
+  },
+  {
+    "id": "Visual Studio",
+    "name": "Visual Studio",
+    "category": "IDE",
+    "executables": {
+      "Windows": ["devenv.exe"],
+      "Linux": ["devenv"],
+      "Darwin": ["devenv"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Visual Studio ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["VSCODE_GIT_ASKPASS_EXTRA_ARGS", "VSCODE_CLI"],
+    "related_files": ["resources/app"]
+  },
+  {
+    "id": "IntelliJ IDEA",
+    "name": "IntelliJ IDEA",
+    "category": "IDE",
+    "executables": {
+      "Windows": ["idea64.exe", "idea.bat"],
+      "Linux": ["idea.sh"],
+      "Darwin": ["idea"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "IntelliJ IDEA ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["IDEA_HOME", "IDEA_JDK"],
+    "related_files": ["resources/app"]
+  },
+  {
+    "id": "Eclipse",
+    "name": "Eclipse",
+    "category": "IDE",
+    "executables": {
+      "Windows": ["eclipse.exe"],
+      "Linux": ["eclipse"],
+      "Darwin": ["eclipse"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Eclipse IDE ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["ECLIPSE_HOME", "JAVA_HOME"],
+    "related_files": ["resources/app"]
+  },
+  {
+    "id": "PyCharm",
+    "name": "PyCharm",
+    "category": "IDE",
+    "executables": {
+      "Windows": ["pycharm64.exe", "pycharm.bat"],
+      "Linux": ["pycharm.sh"],
+      "Darwin": ["pycharm"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "PyCharm ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["PYCHARM_HOME", "PYCHARM_JDK"],
+    "related_files": ["resources/app"]
+  },
+  {
+    "id": "git",
+    "name": "Git",
+    "category": "Version Control",
+    "executables": {
+      "Windows": ["git.exe"],
+      "Linux": ["git"],
+      "Darwin": ["git"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "git version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["GIT_HOME", "GIT_SSH"],
+    "related_files": ["resources/app"]
+  },
+  {
+    "id": "Windows SDK",
+    "name": "Windows SDK",
+    "category": "Development Tools",
+    "executables": {
+      "Windows": ["sdk.exe"],
+      "Linux": ["sdk"],
+      "Darwin": ["sdk"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Windows SDK ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["WindowsSDKDir", "WindowsSDKVersion"],
+    "related_files": ["resources/app"]
+  },
+  {
+    "id": "CMake",
+    "name": "CMake",
+    "category": "Build Tools",
+    "executables": {
+      "Windows": ["cmake.exe"],
+      "Linux": ["cmake"],
+      "Darwin": ["cmake"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "cmake version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["CMAKE_HOME", "CMAKE_PREFIX_PATH"],
+    "related_files": ["lib/cmake"]
+  },
+  {
+    "id": "Gradle",
+    "name": "Gradle",
+    "category": "Build Tools",
+    "executables": {
+      "Windows": ["gradle.bat"],
+      "Linux": ["gradle"],
+      "Darwin": ["gradle"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Gradle ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["GRADLE_HOME", "GRADLE_USER_HOME"],
+    "related_files": ["lib/gradle"]
+  },
+  {
+    "id": "Maven",
+    "name": "Maven",
+    "category": "Build Tools",
+    "executables": {
+      "Windows": ["mvn.cmd"],
+      "Linux": ["mvn"],
+      "Darwin": ["mvn"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Apache Maven ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["MAVEN_HOME", "MAVEN_OPTS"],
+    "related_files": ["lib/maven"]
+  },
+  {
+    "id": "Ant",
+    "name": "Ant",
+    "category": "Build Tools",
+    "executables": {
+      "Windows": ["ant.bat"],
+      "Linux": ["ant"],
+      "Darwin": ["ant"]
+    },
+    "version_args": ["-version"],
+    "version_regex": "Apache Ant ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["ANT_HOME", "ANT_OPTS"],
+    "related_files": ["lib/ant"]
+  },
+  {
+    "id": "Make",
+    "name": "Make",
+    "category": "Build Tools",
+    "executables": {
+      "Windows": ["make.exe"],
+      "Linux": ["make"],
+      "Darwin": ["make"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "GNU Make ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["MAKE_HOME", "MAKEFLAGS"],
+    "related_files": ["lib/make"]
+  },
+  {
+    "id": "JDK",
+    "name": "Java Development Kit (JDK)",
+    "category": "Development Tools",
+    "executables": {
+      "Windows": ["java.exe", "javac.exe"],
+      "Linux": ["java", "javac"],
+      "Darwin": ["java", "javac"]
+    },
+    "version_args": [
+      "-version"
+    ],
+    "version_regex": "java version \"(.*?)\"",
+    "env_vars": [
+      "JAVA_HOME",
+      "JDK_HOME"
+    ],
+    "related_files": ["lib/jdk"]
+  },
+  {
+    "id": "GCC",
+    "name": "GNU Compiler Collection (GCC)",
+    "category": "Development Tools",
+    "executables": {
+      "Windows": ["gcc.exe"],
+      "Linux": ["gcc"],
+      "Darwin": ["gcc"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "gcc ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["GCC_HOME", "GCC_INCLUDE_DIR"],
+    "related_files": ["lib/gcc"]
+  },
+  {
+    "id": "Clang",
+    "name": "Clang",
+    "category": "Development Tools",
+    "executables": {
+      "Windows": ["clang.exe"],
+      "Linux": ["clang"],
+      "Darwin": ["clang"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "clang version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["CLANG_HOME", "CLANG_INCLUDE_DIR"],
+    "related_files": ["lib/clang"]
+  },
+  {
+    "id": "cmake",
+    "name": "CMake",
+    "category": "Build Tools",
+    "executables": {
+      "Windows": ["cmake.exe"],
+      "Linux": ["cmake"],
+      "Darwin": ["cmake"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "cmake version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["CMAKE_HOME", "CMAKE_PREFIX_PATH"],
+    "related_files": ["lib/cmake"]
+  },
+  {
+    "id": "ninja",
+    "name": "Ninja",
+    "category": "Build Tools",
+    "executables": {
+      "Windows": ["ninja.exe"],
+      "Linux": ["ninja"],
+      "Darwin": ["ninja"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "ninja ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["NINJA_HOME", "NINJA_BUILD_DIR"],
+    "related_files": ["lib/ninja"]
+  },
+  {
+    "id": ".Net SDK",
+    "name": ".NET SDK",
+    "category": "Development Tools",
+    "executables": {
+      "Windows": ["dotnet.exe"],
+      "Linux": ["dotnet"],
+      "Darwin": ["dotnet"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Microsoft .NET SDK ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["DOTNET_ROOT", "DOTNET_CLI_HOME"],
+    "related_files": ["lib/dotnet"]
+  },
+  {
+    "id": "Ansible",
+    "name": "Ansible",
+    "category": "Configuration Management",
+    "executables": {
+      "Windows": ["ansible.exe"],
+      "Linux": ["ansible"],
+      "Darwin": ["ansible"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "ansible ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["ANSIBLE_HOME", "ANSIBLE_CONFIG"],
+    "related_files": ["lib/ansible"]
+  },
+  {
+    "id": "Chef",
+    "name": "Chef",
+    "category": "Configuration Management",
+    "executables": {
+      "Windows": ["chef.exe"],
+      "Linux": ["chef"],
+      "Darwin": ["chef"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Chef Infra Client version ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["CHEF_HOME", "CHEF_CONFIG"],
+    "related_files": ["lib/chef"]
+  },
+  {
+    "id": "Puppet",
+    "name": "Puppet",
+    "category": "Configuration Management",
+    "executables": {
+      "Windows": ["puppet.bat"],
+      "Linux": ["puppet"],
+      "Darwin": ["puppet"]
+    },
+    "version_args": ["--version"],
+    "version_regex": "Puppet ([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)",
+    "env_vars": ["PUPPET_HOME", "PUPPET_CONFIG"],
+    "related_files": ["lib/puppet"]
   }
 ]

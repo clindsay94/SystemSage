@@ -1,53 +1,56 @@
 {
-  "scan_paths": {
-    "custom_paths": [],
-    "include_system_common_paths": true,
-    "include_user_common_paths": true
-  },
-  "scan_patterns": {
-    "exclude_directories": [
-      "*/node_modules/*",
-      "*/.git/*",
-      "*/__pycache__/*",
-      "*/.venv/*",
-      "*/venv/*",
-      "*/env/*",
-      "*/.env/*",
-      "*/build/*",
-      "*/dist/*",
-      "*/*.egg-info/*"
-    ],
-    "exclude_files": [
-      "*.log",
-      "*.tmp",
-      "*.pyc",
-      "*.pyo",
-      "*.swp"
-    ],
-    "include_files": []
-  },
-  "ignored_tools_identifiers": [],
-  "package_manager_preferences": {
-    "Windows": [
-      "winget",
-      "choco",
-      "scoop"
-    ],
-    "Linux": [
-      "apt",
-      "dnf",
-      "yum",
-      "pacman",
-      "snap",
-      "flatpak"
-    ],
-    "Darwin": [
-      "brew"
-    ]
-  },
-  "scan_options": {
-    "check_updates_via_package_managers": true,
-    "parse_shell_configs": true,
-    "max_recursion_depth": 10
-  }
+    "scan_options": {
+        "scan_paths": [
+            "~"
+        ],
+        "excluded_paths": [
+            "~/Library",
+            "/System",
+            "/private",
+            "/var/log",
+            "/tmp",
+            "C:\\Windows",
+            "C:\\Program Files (x86)\\Common Files",
+            "C:\\ProgramData\\Package Cache"
+        ],
+        "scan_env_vars": true,
+        "cross_reference_tools": true,
+        "perform_update_checks": true,
+        "preferred_package_managers_windows": [
+            "winget",
+            "choco",
+            "scoop"
+        ],
+        "preferred_package_managers_linux": [
+            "apt",
+            "dnf",
+            "yum",
+            "pacman",
+            "snap",
+            "flatpak"
+        ],
+        "preferred_package_managers_darwin": [
+            "brew"
+        ],
+        "executable_extensions": [
+            ".exe",
+            ".bat",
+            ".cmd",
+            ".sh",
+            ".py",
+            ".jar",
+            ".msi",
+            ".dmg",
+            ".pkg"
+        ]
+    },
+    "logging": {
+        "level": "INFO",
+        "file": "devenvaudit.log"
+    },
+    "ignored_tools_identifiers": [],
+    "user_preferences": {
+        "theme": "default",
+        "always_show_details": false
+    }
 }
