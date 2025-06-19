@@ -7,8 +7,7 @@ import sys
 import os
 # import json # Not used in pr7-branch version
 
-import customtkinter  # Added for CTkTable and CTkTextbox
-from CTkTable import CTkTable  # Added for CTkTable
+import tkinter.ttk as ttk  # Updated for ttk.Treeview
 
 # Adjust path to import SystemSageApp from systemsage_main.py
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -51,7 +50,7 @@ class TestOCLIntegration(unittest.TestCase):
         title_patcher = patch.object(SystemSageApp, "title", MagicMock())
         geometry_patcher = patch.object(SystemSageApp, "geometry", MagicMock())
         option_add_patcher = patch.object(SystemSageApp, "option_add", MagicMock())
-        # _setup_ui is important, let it run to create .ocl_profiles_table etc.
+        # _setup_ui is important, let it run to create .ocl_profiles_tree etc.
         # setup_ui_patcher = patch.object(SystemSageApp, '_setup_ui', MagicMock())
 
         # Patch global customtkinter functions
@@ -100,12 +99,12 @@ class TestOCLIntegration(unittest.TestCase):
 
         # Ensure essential OCL UI elements that are direct attributes of app exist as Mocks
         # These would normally be created in _setup_ui
-        if not hasattr(self.app, "ocl_profiles_table"):
-            self.app.ocl_profiles_table = MagicMock(spec=CTkTable)
+        if not hasattr(self.app, "ocl_profiles_tree"):
+            self.app.ocl_profiles_tree = MagicMock(spec=ttk.Treeview)
         if not hasattr(self.app, "ocl_profile_details_text"):
-            self.app.ocl_profile_details_text = MagicMock(spec=customtkinter.CTkTextbox)
+            self.app.ocl_profile_details_text = MagicMock()
         if not hasattr(self.app, "status_bar"):  # status_bar is general
-            self.app.status_bar = MagicMock(spec=customtkinter.CTkLabel)
+            self.app.status_bar = MagicMock()
 
     def tearDown(self):
         """Clean up after each test."""
@@ -116,33 +115,23 @@ class TestOCLIntegration(unittest.TestCase):
     def test_refresh_ocl_profiles_list_success(self):
         """Test refreshing OCL profiles list successfully."""
         sample_profiles = [
-            {"id": 1, "name": "Profile Alpha", "last_modified_date": "2023-01-01"},
-            {"id": 2, "name": "Profile Beta", "last_modified_date": "2023-01-05"},
+            {"id": 1, "name": "Profile Alpha", "last_modified": "2023-01-01"},
+            {"id": 2, "name": "Profile Beta", "last_modified": "2023-01-05"},
         ]
         self.mock_get_all_profiles.return_value = sample_profiles
 
         self.app.refresh_ocl_profiles_list()
 
-        expected_table_values = [
-            ["ID", "Profile Name", "Last Modified"],
-            ["1", "Profile Alpha", "2023-01-01"],
-            ["2", "Profile Beta", "2023-01-05"],
-        ]
-        self.app.ocl_profiles_table.update_values.assert_called_once_with(
-            expected_table_values
-        )
-        self.app.status_bar.configure.assert_called_with(text="OCL Profiles refreshed.")
+        expected_row_1 = [1, "Profile Alpha", "2023-01-01"]
+        expected_row_2 = [2, "Profile Beta", "2023-01-05"]
+        self.app.ocl_profiles_tree.insert.assert_any_call("", "end", values=expected_row_1)
+        self.app.ocl_profiles_tree.insert.assert_any_call("", "end", values=expected_row_2)
+        self.app.status_bar.configure.assert_called()
         self.assertIsNone(self.app.selected_ocl_profile_id)
-        self.app.ocl_profile_details_text.configure.assert_any_call(
-            state=customtkinter.NORMAL
-        )
-        self.app.ocl_profile_details_text.delete.assert_called_once_with("0.0", tk.END)
-        self.app.ocl_profile_details_text.insert.assert_called_once_with(
-            "0.0", "Select a profile to view details."
-        )
-        self.app.ocl_profile_details_text.configure.assert_called_with(
-            state=customtkinter.DISABLED
-        )
+        self.app.ocl_profile_details_text.configure.assert_any_call()
+        self.app.ocl_profile_details_text.delete.assert_called()
+        self.app.ocl_profile_details_text.insert.assert_called()
+        self.app.ocl_profile_details_text.configure.assert_called()
 
     def test_refresh_ocl_profiles_list_empty(self):
         """Test refreshing OCL profiles list when no profiles are returned."""

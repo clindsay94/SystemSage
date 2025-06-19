@@ -6,6 +6,7 @@ encapsulating data access logic and offering higher-level operations.
 
 from typing import List, Dict, Optional, Any
 from . import database
+from .bios_profile import Profile
 
 # --- Profile API Functions ---
 
@@ -56,6 +57,66 @@ def get_profile_details(profile_id: int) -> Optional[Dict[str, Any]]:
         return detailed_profile
     except Exception as e:
         print(f"API Error in get_profile_details for profile_id {profile_id}: {e}")
+        return None
+
+
+def get_profile_obj_by_id(profile_id: int) -> Optional[Profile]:
+    """
+    Retrieves a profile by its ID and returns it as a Profile object.
+    This is a convenience wrapper around get_profile_details.
+    """
+    try:
+        profile_data = database.get_profile(profile_id)
+        if not profile_data:
+            return None
+
+        settings_data = database.get_settings_for_profile(profile_id)
+        
+        # Create a Profile instance from the settings list
+        profile_obj = Profile.from_settings_list(settings_data)
+        
+        # Set the main attributes from the profiles table
+        profile_obj.id = profile_data['id']
+        profile_obj.name = profile_data['name']
+        profile_obj.description = profile_data['description']
+        
+        return profile_obj
+    except Exception as e:
+        print(f"API Error in get_profile_obj_by_id for profile_id {profile_id}: {e}")
+        return None
+
+
+def save_or_update_profile(profile_obj: Profile) -> Optional[int]:
+    """
+    Saves a new profile or updates an existing one based on the Profile object.
+    If profile_obj.id is None, a new profile is created.
+    Otherwise, the existing profile with that ID is updated.
+    """
+    try:
+        # Convert hierarchical settings dict back to a flat list for DB operations
+        settings_flat_list = profile_obj.to_settings_list()
+
+        if profile_obj.id is None:
+            # Create new profile
+            profile_id = database.create_profile(
+                profile_obj.name, profile_obj.description
+            )
+            if profile_id:
+                database.set_settings_for_profile(profile_id, settings_flat_list)
+                profile_obj.id = profile_id  # Set the new id on the object
+            return profile_id
+        else:
+            # Update existing profile
+            success = database.update_profile(
+                profile_obj.id, profile_obj.name, profile_obj.description
+            )
+            if success:
+                database.set_settings_for_profile(
+                    profile_obj.id, settings_flat_list
+                )
+            return profile_obj.id if success else None
+    except Exception as e:
+        print(f"API Error in save_or_update_profile: {e}")
         return None
 
 
@@ -190,20 +251,15 @@ def update_existing_profile(
         )
 
 
-def delete_profile_by_id(profile_id: int) -> bool:
+def delete_profile(profile_id: int) -> bool:
     """
     Deletes a profile and its associated settings and logs (due to CASCADE).
-
-    Args:
-        profile_id (int): The ID of the profile to delete.
-
-    Returns:
-        bool: True if the profile was successfully deleted, False otherwise.
+    Note: Renamed from delete_profile_by_id for consistency in the main app.
     """
     try:
         return database.delete_profile(profile_id)
     except Exception as e:
-        print(f"API Error in delete_profile_by_id for profile_id {profile_id}: {e}")
+        print(f"API Error in delete_profile for profile_id {profile_id}: {e}")
         return False
 
 
@@ -372,8 +428,8 @@ if __name__ == "__main__":
             print(f"Failed to add log to profile {new_profile_id2}")
 
     if new_profile_id1:
-        print(f"\n--- Testing delete_profile_by_id for ID {new_profile_id1} ---")
-        delete_success = delete_profile_by_id(new_profile_id1)
+        print(f"\n--- Testing delete_profile for ID {new_profile_id1} ---")
+        delete_success = delete_profile(new_profile_id1)
         print(f"Deletion of profile {new_profile_id1} successful: {delete_success}")
 
     print("\n--- Testing get_all_profiles (after actions) ---")

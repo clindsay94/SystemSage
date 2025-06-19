@@ -19,8 +19,8 @@ sqlalchemy>=2.0.20
 # and AI features, uncomment the packages you need from the list below.
 # I haven't even began to attempt to implement these features yet, so this is probably broken if you try to use any of them. \
 
-# pytest>=7.4.0
-# pytest-cov>=4.0.0
+ pytest>=7.4.0
+ pytest-cov>=4.0.0
 # ipykernel>=6.9.5
 # ipython>=9.3.0
 # pandas>=2.1.3

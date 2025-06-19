@@ -98,24 +98,30 @@ class CTkFileDialog(ctk.CTkToplevel):
 
         self.tree = ttk.Treeview(self.tree_frame, show="tree")
         self.tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+
+        # Bind both single and double click to _on_click for usability
+        self.tree.bind("<Button-1>", self._on_click)
         self.tree.bind("<Double-1>", self._on_click)
 
         self._populate_file_list()
 
-        self.wait_visibility()
         self.grab_set()
-        self.wait_window()
+
+    def get(self):
+        """Waits for the dialog to be closed and returns the selected path."""
+        self.master.wait_window(self)
+        return self.path
 
     def _populate_file_list(self, event=None):
-        if self.initialdir.get() == "":
-            self.initialdir.set(os.path.join(os.path.abspath("."), ""))
         try:
+            path = self.initialdir.get()
             for item in self.tree.get_children():
                 self.tree.delete(item)
-            items = sorted(os.listdir(self.initialdir.get()))
+            items = sorted(os.listdir(path))
             for item in items:
                 if not item.startswith(".") or self.hidden_files:
-                    if os.path.isdir(os.path.join(self.initialdir.get(), item)):
+                    if os.path.isdir(os.path.join(path, item)):
                         self.tree.insert("", tk.END, text=item, image=self.folder_image)
                     else:
                         self.tree.insert("", tk.END, text=item, image=self.file_image)

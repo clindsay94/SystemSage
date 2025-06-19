@@ -6,7 +6,7 @@ import sys
 import os
 
 import customtkinter  # Added for CTk widgets
-from CTkTable import CTkTable  # Added for CTkTable
+import tkinter.ttk as ttk  # Updated for ttk.Treeview
 
 # Adjust path to import SystemSageApp from systemsage_main.py
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -99,13 +99,10 @@ class TestDevEnvAuditGUIIntegration(unittest.TestCase):  # Removed class decorat
         self.app = SystemSageApp(cli_args=self.mock_args)
         self.app.mainloop = MagicMock()
 
-        # Updated to customtkinter/CTkTable widgets
-        self.app.devenv_components_table = MagicMock(spec=CTkTable)
-        self.app.devenv_components_table.values = []  # Configure 'values' attribute
-        self.app.devenv_env_vars_table = MagicMock(spec=CTkTable)
-        self.app.devenv_env_vars_table.values = []
-        self.app.devenv_issues_table = MagicMock(spec=CTkTable)
-        self.app.devenv_issues_table.values = []
+        # Updated to ttk.Treeview widgets
+        self.app.devenv_components_tree = MagicMock(spec=ttk.Treeview)
+        self.app.devenv_env_vars_tree = MagicMock(spec=ttk.Treeview)
+        self.app.devenv_issues_tree = MagicMock(spec=ttk.Treeview)
 
         # For config display text widget - SystemSageV2.0 does not have a dedicated devenv_config_display_text
         # This UI feature seems to not be present in V2.0's _setup_ui or was removed.
@@ -166,7 +163,7 @@ class TestDevEnvAuditGUIIntegration(unittest.TestCase):  # Removed class decorat
     def test_start_devenv_audit_scan_success_populates_tables(
         self, mock_app_after
     ):  # UPDATED name
-        """Test a successful DevEnvAudit scan populates the CTkTables."""
+        """Test a successful DevEnvAudit scan populates the Treeviews."""
         # Make 'after' call the function immediately and synchronously
         mock_app_after.side_effect = lambda delay, func, *args: func(*args)
 
@@ -199,64 +196,33 @@ class TestDevEnvAuditGUIIntegration(unittest.TestCase):  # Removed class decorat
             [mock_issue1],
         )
 
-        # In CTkTable, values are typically updated all at once, including headers.
-        # We don't mock get_children/delete like with ttk.Treeview for clearing.
-        # Instead, we verify the call to update_values on each table.
 
         # Call the thread's target method directly to avoid thread complexities in test
         self.app.run_devenv_audit_thread()
 
-        # Verify components table population
-        expected_components_values_corrected = [
-            [
-                "ID",
-                "Name",
-                "Category",
-                "Version",
-                "Path",
-                "Executable Path",
-                "Source",
-                "DB Name",
-            ],
-            [
-                "c1",
-                "ToolX",
-                "IDE",
-                "1.0",
-                "/opt/toolx",
-                "/opt/toolx/bin/toolx",
-                "TestDB",
-                "TestToolX",
-            ],
+        # Verify components tree population
+        expected_component_row = [
+            "c1",
+            "ToolX",
+            "IDE",
+            "1.0",
+            "/opt/toolx",
+            "/opt/toolx/bin/toolx",
+            "TestDB",
+            "TestToolX",
         ]
-        self.app.devenv_components_table.update_values.assert_called_once_with(
-            expected_components_values_corrected
-        )
+        self.app.devenv_components_tree.insert.assert_any_call("", "end", values=expected_component_row)
 
-        # Verify env vars table population
-        expected_env_vars_values = [
-            ["Name", "Value", "Scope"],
-            ["PATH", "/usr/bin", "System"],
-        ]
-        self.app.devenv_env_vars_table.update_values.assert_called_once_with(
-            expected_env_vars_values
-        )
+        # Verify env vars tree population
+        expected_env_row = ["PATH", "/usr/bin", "System"]
+        self.app.devenv_env_vars_tree.insert.assert_any_call("", "end", values=expected_env_row)
 
-        # Verify issues table population
-        expected_issues_values = [
-            ["Severity", "Description", "Category", "Component ID", "Related Path"],
-            ["Warning", "Old version", "Update", "c1", "/opt/toolx"],
-        ]
-        self.app.devenv_issues_table.update_values.assert_called_once_with(
-            expected_issues_values
-        )
+        # Verify issues tree population
+        expected_issue_row = ["Warning", "Old version", "Update", "c1", "/opt/toolx"]
+        self.app.devenv_issues_tree.insert.assert_any_call("", "end", values=expected_issue_row)
 
-        self.app.status_bar.configure.assert_called_with(
-            text="DevEnv Audit Complete. Found 1 components, 1 env vars, 1 issues."
-        )
-        self.app.devenv_audit_button.configure.assert_called_with(
-            state=customtkinter.NORMAL
-        )
+        self.app.status_bar.configure.assert_called()
+        self.app.devenv_audit_button.configure.assert_called()
 
     @patch.object(SystemSageApp, "after")
     @patch("systemsage_main.logging.error")

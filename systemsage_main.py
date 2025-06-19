@@ -17,10 +17,12 @@ from threading import Thread
 import traceback
 import sys
 import logging
+# --- UI Imports ---
 import customtkinter
-from CTkTable import CTkTable
+from tkinter import ttk
 # CTkFileDialog will be imported in the fallback logic below
 from tkinter import messagebox # Import messagebox explicitly
+from typing import Optional
 
 # --- DevEnvAudit Imports ---
 from devenvaudit_src.scan_logic import EnvironmentScanner
@@ -209,9 +211,10 @@ else:
 # --- Helper function for PyInstaller resource path ---
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
-    try:
+    # Use hasattr to avoid AttributeError if _MEIPASS is not present
+    if hasattr(sys, '_MEIPASS'):
         base_path = sys._MEIPASS  # type: ignore
-    except Exception:
+    else:
         base_path = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(base_path, relative_path)
 
@@ -396,12 +399,8 @@ def get_installed_software(calculate_disk_usage_flag):
                                 app_details["DisplayName"] = str(
                                     winreg.QueryValueEx(app_key, "DisplayName")[0]
                                 )  # type: ignore
-                            except FileNotFoundError:
+                            except (FileNotFoundError, OSError):
                                 app_details["DisplayName"] = subkey_name
-                            except OSError as e:
-                                app_details["DisplayName"] = (
-                                    f"{subkey_name} (Name Error: {e.strerror})"
-                                )
                             entry_id_name = app_details["DisplayName"]
                             entry_id_version = "N/A"
                             try:
@@ -409,12 +408,8 @@ def get_installed_software(calculate_disk_usage_flag):
                                     winreg.QueryValueEx(app_key, "DisplayVersion")[0]
                                 )
                                 entry_id_version = app_details["DisplayVersion"]  # type: ignore
-                            except FileNotFoundError:
+                            except (FileNotFoundError, OSError):
                                 app_details["DisplayVersion"] = "N/A"
-                            except OSError as e:
-                                app_details["DisplayVersion"] = (
-                                    f"Version Error: {e.strerror}"
-                                )
                             entry_id = (entry_id_name, entry_id_version)
                             if entry_id in processed_entries:
                                 continue
@@ -423,12 +418,8 @@ def get_installed_software(calculate_disk_usage_flag):
                                 app_details["Publisher"] = str(
                                     winreg.QueryValueEx(app_key, "Publisher")[0]
                                 )  # type: ignore
-                            except FileNotFoundError:
+                            except (FileNotFoundError, OSError):
                                 app_details["Publisher"] = "N/A"
-                            except OSError as e:
-                                app_details["Publisher"] = (
-                                    f"Publisher Error: {e.strerror}"
-                                )
                             app_details["Category"] = (
                                 "Component/Driver"
                                 if is_likely_component(
@@ -506,14 +497,9 @@ def get_installed_software(calculate_disk_usage_flag):
                                     app_details["PathStatus"] = (
                                         "No Valid Path in Registry"
                                     )
-                            except FileNotFoundError:
+                            except (FileNotFoundError, OSError):
                                 app_details["InstallLocation"] = "N/A"
                                 app_details["PathStatus"] = "No Path in Registry"
-                            except OSError as e:
-                                app_details["InstallLocation"] = (
-                                    f"Path Read Error: {e.strerror}"
-                                )
-                                app_details["PathStatus"] = "Error"
                             if app_details["DisplayName"] and not app_details[
                                 "DisplayName"
                             ].startswith("{"):
@@ -670,12 +656,12 @@ class SystemSageApp(customtkinter.CTk):
         self.cli_args = cli_args
         customtkinter.set_appearance_mode("System")
 
-# --- Theme and Styling Constants ---
+        # --- Theme and Styling Constants ---
         self.corner_radius_std = 6
         self.corner_radius_soft = 8
         self.padding_std = 5
         self.padding_large = 10
-        self.button_hover_color = ("gray70" )
+        self.button_hover_color = ("gray70", "gray30")
         self.action_button_fg_color = "default"
         theme_path = resource_path("custom_theme.json")
         if os.path.exists(theme_path):
@@ -687,44 +673,50 @@ class SystemSageApp(customtkinter.CTk):
 
         self.default_font = ("Roboto", 12)
         self.button_font = ("Roboto", 12, "bold")
-        self.title_font = ("Roboto", 14, "bold") # Font for section titles
+        self.title_font = ("Roboto", 14, "bold")
         self.option_add("*Font", self.default_font)
-        self.title("System Sage V2.1 - Integrated OCL") # Version bump
-        self.geometry("1200x850")
 
-        self.inventory_scan_button = None
-        self.devenv_audit_button = None
-        self.inventory_table = None
-        self.devenv_components_table = None
-        self.devenv_env_vars_table = None
-        self.devenv_issues_table = None
-        self.ocl_profiles_table = None
-        self.selected_ocl_profile_id = None
-        self.status_bar = None
+        # --- Initialize Instance Attributes ---
+        self.inventory_scan_button: Optional[customtkinter.CTkButton] = None
+        self.devenv_audit_button: Optional[customtkinter.CTkButton] = None
+        self.inventory_tree: Optional[ttk.Treeview] = None
+        self.devenv_components_tree: Optional[ttk.Treeview] = None
+        self.devenv_env_vars_tree: Optional[ttk.Treeview] = None
+        self.devenv_issues_tree: Optional[ttk.Treeview] = None
+        self.ocl_profiles_tree: Optional[ttk.Treeview] = None
+        self.selected_ocl_profile_id: Optional[int] = None
+        self.status_bar: Optional[customtkinter.CTkLabel] = None
         self.scan_in_progress = False
-        self.system_inventory_results = []
-        self.devenv_components_results = []
-        self.devenv_env_vars_results = []
-        self.devenv_issues_results = []
-        self.ocl_profile_details_text = None
+        self.system_inventory_results: list = []
+        self.devenv_components_results: list = []
+        self.devenv_env_vars_results: list = []
+        self.devenv_issues_results: list = []
+        self.ocl_profile_details_text: Optional[customtkinter.CTkTextbox] = None
+        self.ocl_edit_profile_button: Optional[customtkinter.CTkButton] = None
+        self.ocl_export_profile_button: Optional[customtkinter.CTkButton] = None
+        self.ocl_delete_profile_button: Optional[customtkinter.CTkButton] = None
 
-        # --- MODIFIED: OCL button variables ---
-        self.ocl_refresh_button = None
-        self.ocl_new_bios_profile_button = None # Replaces ocl_save_new_button
-        self.ocl_import_bios_profile_button = None # New button
-        self.ocl_update_selected_button = None
-        self.ocl_edit_profile_button = None
+        # --- Main Application Window Setup ---
+        self.title("System Sage - Comprehensive System Analysis")
+        self.geometry("1400x900")
 
-    def quit_app(self):
-        """Closes the application."""
-        self.destroy()
-
-    def _setup_ui(self):
-
-        # Action Bar
-        self.action_bar_frame = customtkinter.CTkFrame(self, corner_radius=0, height=50, border_width=0) # Corrected indentation
+        # --- Create Main Layout Frames ---
+        self.action_bar_frame = customtkinter.CTkFrame(self, corner_radius=0, height=50, border_width=0)
         self.action_bar_frame.pack(side=tk.TOP, fill=tk.X, padx=0, pady=(0, self.padding_std))
 
+        self.main_notebook = customtkinter.CTkTabview(self, corner_radius=self.corner_radius_soft, border_width=0)
+        self.main_notebook.pack(expand=True, fill="both", padx=self.padding_large, pady=(self.padding_std, self.padding_large))
+
+        # --- Populate UI ---
+        self._setup_ui()
+
+        # --- Perform Initial Actions ---
+        self.after(100, self.perform_initial_scans)
+
+    def _setup_ui(self):
+        """Create and configure all UI elements within the main layout frames."""
+
+        # --- Action Bar Buttons ---
         action_button_height = 30
         action_button_padx = self.padding_std
         action_button_pady = (self.padding_std + 3, self.padding_std + 3)
@@ -738,9 +730,7 @@ class SystemSageApp(customtkinter.CTk):
             height=action_button_height,
             hover_color=self.button_hover_color,
         )
-        self.save_report_button.pack(
-            side=tk.LEFT, padx=action_button_padx, pady=action_button_pady
-        )
+        self.save_report_button.pack(side=tk.LEFT, padx=action_button_padx, pady=action_button_pady)
 
         self.inventory_scan_button = customtkinter.CTkButton(
             master=self.action_bar_frame,
@@ -751,9 +741,7 @@ class SystemSageApp(customtkinter.CTk):
             height=action_button_height,
             hover_color=self.button_hover_color,
         )
-        self.inventory_scan_button.pack(
-            side=tk.LEFT, padx=action_button_padx, pady=action_button_pady
-        )
+        self.inventory_scan_button.pack(side=tk.LEFT, padx=action_button_padx, pady=action_button_pady)
         if not IS_WINDOWS:
             self.inventory_scan_button.configure(state=customtkinter.DISABLED)
 
@@ -766,9 +754,7 @@ class SystemSageApp(customtkinter.CTk):
             height=action_button_height,
             hover_color=self.button_hover_color,
         )
-        self.devenv_audit_button.pack(
-            side=tk.LEFT, padx=action_button_padx, pady=action_button_pady
-        )
+        self.devenv_audit_button.pack(side=tk.LEFT, padx=action_button_padx, pady=action_button_pady)
 
         self.exit_button = customtkinter.CTkButton(
             master=self.action_bar_frame,
@@ -779,974 +765,700 @@ class SystemSageApp(customtkinter.CTk):
             height=action_button_height,
             hover_color=self.button_hover_color,
         )
-        self.exit_button.pack(
-            side=tk.RIGHT, padx=action_button_padx, pady=action_button_pady
-        )
+        self.exit_button.pack(side=tk.RIGHT, padx=action_button_padx, pady=action_button_pady)
 
-       # Main TabView - MOVED HERE
-        self.main_notebook = customtkinter.CTkTabview(self, corner_radius=self.corner_radius_soft, border_width=0)
-        self.main_notebook.pack(expand=True, fill="both", padx=self.padding_large, pady=(self.padding_std, self.padding_large))
+        # --- Main TabView Setup ---
         self.main_notebook.add("System Inventory")
         self.main_notebook.add("Developer Environment Audit")
         self.main_notebook.add("Overclocker's Logbook")
-        # --- System Inventory Tab ---
+
+        # --- System Inventory Tab (ttk.Treeview version) ---
         inventory_tab_frame = self.main_notebook.tab("System Inventory")
-        inv_cols = [
-            "Name",
-            "Version",
-            "Publisher",
-            "Path",
-            "Size",
-            "Status",
-            "Remarks",
-            "SourceHive",
-            "RegKey",
-        ]
-        self.inventory_table = CTkTable(
-            master=inventory_tab_frame,
-            column=len(inv_cols),
-            values=[inv_cols],
-            font=self.default_font,
-            corner_radius=self.corner_radius_std,
-            hover_color=self.button_hover_color,
-        )
-        self.inventory_table.pack(
-            expand=True, fill="both", padx=self.padding_large, pady=self.padding_large
-        )
+        inventory_tab_frame.grid_rowconfigure(0, weight=1)
+        inventory_tab_frame.grid_columnconfigure(0, weight=1)
+        inventory_outer_frame = customtkinter.CTkFrame(inventory_tab_frame, corner_radius=0, fg_color="transparent")
+        inventory_outer_frame.grid(row=0, column=0, sticky="nsew", padx=self.padding_std, pady=self.padding_std)
+        inventory_outer_frame.grid_rowconfigure(1, weight=1)
+        inventory_outer_frame.grid_columnconfigure(0, weight=1)
+
+        # Filter entry
+        filter_frame = customtkinter.CTkFrame(inventory_outer_frame, fg_color="transparent")
+        filter_frame.grid(row=0, column=0, sticky="ew", pady=(0, 6))
+        filter_label = customtkinter.CTkLabel(filter_frame, text="Filter:")
+        filter_label.pack(side="left", padx=(0, 6))
+        self.inventory_filter_var = tk.StringVar()
+        filter_entry = customtkinter.CTkEntry(filter_frame, textvariable=self.inventory_filter_var, width=220)
+        filter_entry.pack(side="left", fill="x", expand=True)
+        filter_entry.bind("<KeyRelease>", lambda e: self.update_inventory_display())
+
+        # Treeview setup
+        inv_cols = ["Name", "Version", "Publisher", "Path", "Size", "Status", "Remarks", "SourceHive", "RegKey"]
+        self.inventory_tree = ttk.Treeview(inventory_outer_frame, columns=inv_cols, show="headings", selectmode="browse")
+        for col in inv_cols:
+            self.inventory_tree.heading(col, text=col, command=lambda c=col: self._sort_inventory_by_column(c, False))
+            self.inventory_tree.column(col, width=120, anchor="w", stretch=True)
+        self.inventory_tree.grid(row=1, column=0, sticky="nsew")
+
+        # Add vertical scrollbar
+        vsb = ttk.Scrollbar(inventory_outer_frame, orient="vertical", command=self.inventory_tree.yview)
+        self.inventory_tree.configure(yscrollcommand=vsb.set)
+        vsb.grid(row=1, column=1, sticky="ns")
+
+        # Add horizontal scrollbar
+        hsb = ttk.Scrollbar(inventory_outer_frame, orient="horizontal", command=self.inventory_tree.xview)
+        self.inventory_tree.configure(xscrollcommand=hsb.set)
+        hsb.grid(row=2, column=0, sticky="ew")
+
+        # Style Treeview to match customtkinter as much as possible
+        style = ttk.Style()
+        style.theme_use("default")
+        style.configure("Treeview",
+                        background="#23272e",
+                        foreground="#e0e0e0",
+                        rowheight=28,
+                        fieldbackground="#23272e",
+                        font=("Segoe UI", 11))
+        style.configure("Treeview.Heading",
+                        background="#1a1d22",
+                        foreground="#aeea00",
+                        font=("Segoe UI", 11, "bold"))
+        style.map("Treeview.Heading",
+                  background=[("active", "#263238")])
+
+        self.inventory_tree.bind("<ButtonRelease-1>", self._clear_inventory_sort_state)
+        self._inventory_sort_column = None
+        self._inventory_sort_reverse = False
 
         # --- Developer Environment Audit Tab ---
-        devenv_tab_frame = self.main_notebook.tab("Developer Environment Audit")
-        devenv_tab_frame.grid_columnconfigure(0, weight=1)
+        devenv_audit_tab_frame = self.main_notebook.tab("Developer Environment Audit")
+        devenv_audit_tab_frame.grid_rowconfigure(0, weight=1)
+        devenv_audit_tab_frame.grid_columnconfigure(0, weight=1)
 
-        outer_components_ctk_frame = customtkinter.CTkFrame(
-            devenv_tab_frame, corner_radius=self.corner_radius_soft, border_width=1
-        )
-        outer_components_ctk_frame.grid(
-            row=0,
-            column=0,
-            padx=self.padding_large,
-            pady=(self.padding_large, self.padding_std),
-            sticky="nsew",
-        )
-        outer_components_ctk_frame.grid_columnconfigure(0, weight=1)
-        customtkinter.CTkLabel(
-            master=outer_components_ctk_frame,
-            text="Detected Components",
-            font=self.title_font,
-        ).pack(
-            pady=(self.padding_std + 3, self.padding_std + 3), padx=self.padding_large
-        )
-        inner_components_ctk_frame = customtkinter.CTkFrame(
-            outer_components_ctk_frame,
-            corner_radius=self.corner_radius_std,
-            border_width=0,
-        )
-        inner_components_ctk_frame.pack(
-            fill="both",
-            expand=True,
-            padx=self.padding_large,
-            pady=(0, self.padding_large),
-        )
-        # Original: comp_cols_list = ["ID", "Name", "Category", "Version", "Path", "Executable Path"]
-        comp_cols_list = [
-            "ID",
-            "Name",
-            "Category",
-            "Version",
-            "Path",
-            "Executable Path",
-            "Source",
-            "DB Name",
-        ]  # Updated
-        self.devenv_components_table = CTkTable(
-            master=inner_components_ctk_frame,
-            column=len(comp_cols_list),
-            values=[comp_cols_list],  # column count now reflects new headers
-            font=self.default_font,
-            corner_radius=self.corner_radius_std,
-            hover_color=self.button_hover_color,
-        )
-        self.devenv_components_table.pack(
-            expand=True, fill="both", padx=self.padding_std, pady=self.padding_std
-        )
+        devenv_notebook = customtkinter.CTkTabview(devenv_audit_tab_frame, corner_radius=self.corner_radius_soft)
+        devenv_notebook.pack(expand=True, fill="both", padx=self.padding_std, pady=self.padding_std)
+        devenv_notebook.add("Detected Components")
+        devenv_notebook.add("Environment Variables")
+        devenv_notebook.add("Issues Found")
 
-        outer_env_vars_ctk_frame = customtkinter.CTkFrame(
-            devenv_tab_frame, corner_radius=self.corner_radius_soft, border_width=1
-        )
-        outer_env_vars_ctk_frame.grid(
-            row=1,
-            column=0,
-            padx=self.padding_large,
-            pady=self.padding_std,
-            sticky="nsew",
-        )
-        outer_env_vars_ctk_frame.grid_columnconfigure(0, weight=1)
-        customtkinter.CTkLabel(
-            master=outer_env_vars_ctk_frame,
-            text="Environment Variables",
-            font=self.title_font,
-        ).pack(
-            pady=(self.padding_std + 3, self.padding_std + 3), padx=self.padding_large
-        )
-        inner_env_vars_ctk_frame = customtkinter.CTkFrame(
-            outer_env_vars_ctk_frame,
-            corner_radius=self.corner_radius_std,
-            border_width=0,
-        )
-        inner_env_vars_ctk_frame.pack(
-            fill="both",
-            expand=True,
-            padx=self.padding_large,
-            pady=(0, self.padding_large),
-        )
-        env_cols_list = ["Name", "Value", "Scope"]
-        self.devenv_env_vars_table = CTkTable(
-            master=inner_env_vars_ctk_frame,
-            column=len(env_cols_list),
-            values=[env_cols_list],
-            font=self.default_font,
-            corner_radius=self.corner_radius_std,
-            hover_color=self.button_hover_color,
-        )
-        self.devenv_env_vars_table.pack(
-            expand=True, fill="both", padx=self.padding_std, pady=self.padding_std
-        )
+        # DevEnv Components (ttk.Treeview)
+        devenv_components_tab = devenv_notebook.tab("Detected Components")
+        devenv_components_tab.grid_rowconfigure(0, weight=1)
+        devenv_components_tab.grid_columnconfigure(0, weight=1)
+        comp_cols = ["ID", "Name", "Category", "Version", "Path", "Executable Path", "Source", "DB Name"]
+        self.devenv_components_tree = ttk.Treeview(devenv_components_tab, columns=comp_cols, show="headings", selectmode="browse")
+        for col in comp_cols:
+            self.devenv_components_tree.heading(col, text=col, command=lambda c=col: self._sort_treeview_by_column(self.devenv_components_tree, c, False))
+            self.devenv_components_tree.column(col, width=120, anchor="w", stretch=True)
+        self.devenv_components_tree.grid(row=0, column=0, sticky="nsew")
+        vsb = ttk.Scrollbar(devenv_components_tab, orient="vertical", command=self.devenv_components_tree.yview)
+        self.devenv_components_tree.configure(yscrollcommand=vsb.set)
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb = ttk.Scrollbar(devenv_components_tab, orient="horizontal", command=self.devenv_components_tree.xview)
+        self.devenv_components_tree.configure(xscrollcommand=hsb.set)
+        hsb.grid(row=1, column=0, sticky="ew")
 
-        outer_issues_ctk_frame = customtkinter.CTkFrame(
-            devenv_tab_frame, corner_radius=self.corner_radius_soft, border_width=1
-        )
-        outer_issues_ctk_frame.grid(
-            row=2,
-            column=0,
-            padx=self.padding_large,
-            pady=self.padding_std,
-            sticky="nsew",
-        )
-        outer_issues_ctk_frame.grid_columnconfigure(0, weight=1)
-        customtkinter.CTkLabel(
-            master=outer_issues_ctk_frame,
-            text="Identified Issues",
-            font=self.title_font,
-        ).pack(
-            pady=(self.padding_std + 3, self.padding_std + 3), padx=self.padding_large
-        )
-        inner_issues_ctk_frame = customtkinter.CTkFrame(
-            outer_issues_ctk_frame, corner_radius=self.corner_radius_std, border_width=0
-        )
-        inner_issues_ctk_frame.pack(
-            fill="both",
-            expand=True,
-            padx=self.padding_large,
-            pady=(0, self.padding_large),
-        )
-        issue_cols_list = [
-            "Severity",
-            "Description",
-            "Category",
-            "Component ID",
-            "Related Path",
-        ]
-        self.devenv_issues_table = CTkTable(
-            master=inner_issues_ctk_frame,
-            column=len(issue_cols_list),
-            values=[issue_cols_list],
-            font=self.default_font,
-            corner_radius=self.corner_radius_std,
-            hover_color=self.button_hover_color,
-        )
-        self.devenv_issues_table.pack(
-            expand=True, fill="both", padx=self.padding_std, pady=self.padding_std
-        )
+        # DevEnv Env Vars (ttk.Treeview)
+        devenv_env_vars_tab = devenv_notebook.tab("Environment Variables")
+        devenv_env_vars_tab.grid_rowconfigure(0, weight=1)
+        devenv_env_vars_tab.grid_columnconfigure(0, weight=1)
+        env_cols = ["Name", "Value", "Scope"]
+        self.devenv_env_vars_tree = ttk.Treeview(devenv_env_vars_tab, columns=env_cols, show="headings", selectmode="browse")
+        for col in env_cols:
+            self.devenv_env_vars_tree.heading(col, text=col, command=lambda c=col: self._sort_treeview_by_column(self.devenv_env_vars_tree, c, False))
+            self.devenv_env_vars_tree.column(col, width=120, anchor="w", stretch=True)
+        self.devenv_env_vars_tree.grid(row=0, column=0, sticky="nsew")
+        vsb = ttk.Scrollbar(devenv_env_vars_tab, orient="vertical", command=self.devenv_env_vars_tree.yview)
+        self.devenv_env_vars_tree.configure(yscrollcommand=vsb.set)
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb = ttk.Scrollbar(devenv_env_vars_tab, orient="horizontal", command=self.devenv_env_vars_tree.xview)
+        self.devenv_env_vars_tree.configure(xscrollcommand=hsb.set)
+        hsb.grid(row=1, column=0, sticky="ew")
 
-        devenv_tab_frame.grid_rowconfigure(0, weight=1)
-        devenv_tab_frame.grid_rowconfigure(1, weight=1)
-        devenv_tab_frame.grid_rowconfigure(2, weight=1)
+        # DevEnv Issues (ttk.Treeview)
+        devenv_issues_tab = devenv_notebook.tab("Issues Found")
+        devenv_issues_tab.grid_rowconfigure(0, weight=1)
+        devenv_issues_tab.grid_columnconfigure(0, weight=1)
+        issue_cols = ["Severity", "Description", "Category", "Component ID", "Related Path"]
+        self.devenv_issues_tree = ttk.Treeview(devenv_issues_tab, columns=issue_cols, show="headings", selectmode="browse")
+        for col in issue_cols:
+            self.devenv_issues_tree.heading(col, text=col, command=lambda c=col: self._sort_treeview_by_column(self.devenv_issues_tree, c, False))
+            self.devenv_issues_tree.column(col, width=120, anchor="w", stretch=True)
+        self.devenv_issues_tree.grid(row=0, column=0, sticky="nsew")
+        vsb = ttk.Scrollbar(devenv_issues_tab, orient="vertical", command=self.devenv_issues_tree.yview)
+        self.devenv_issues_tree.configure(yscrollcommand=vsb.set)
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb = ttk.Scrollbar(devenv_issues_tab, orient="horizontal", command=self.devenv_issues_tree.xview)
+        self.devenv_issues_tree.configure(xscrollcommand=hsb.set)
+        hsb.grid(row=1, column=0, sticky="ew")
 
         # --- Overclocker's Logbook Tab ---
-        ocl_tab_frame = self.main_notebook.tab("Overclocker's Logbook") # Corrected indentation
+        ocl_tab_frame = self.main_notebook.tab("Overclocker's Logbook")
+        ocl_tab_frame.grid_rowconfigure(0, weight=1) # List
+        ocl_tab_frame.grid_rowconfigure(1, weight=1) # Details/Actions
         ocl_tab_frame.grid_columnconfigure(0, weight=1)
-        ocl_tab_frame.grid_rowconfigure(0, weight=2)
-        ocl_tab_frame.grid_rowconfigure(1, weight=1)
-        ocl_top_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1) # Corrected indentation
-        ocl_top_frame.grid(row=0, column=0, padx=self.padding_large, pady=(self.padding_large, self.padding_std), sticky="nsew")
-        ocl_top_frame.grid_columnconfigure(0, weight=1)
+
+        # OCL Top Frame (Profile List, ttk.Treeview)
+        ocl_top_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
+        ocl_top_frame.grid(row=0, column=0, padx=self.padding_large, pady=self.padding_large, sticky="nsew")
         ocl_top_frame.grid_rowconfigure(1, weight=1)
-        customtkinter.CTkLabel(
-            master=ocl_top_frame,
-            text="Available Overclocking Profiles",
-            font=self.title_font,
-        ).grid(
-            row=0,
-            column=0,
-            padx=self.padding_large,
-            pady=(self.padding_std + 3, self.padding_std + 3),
-        )
-        inner_profiles_list_ctk_frame = customtkinter.CTkFrame(
-            ocl_top_frame, corner_radius=self.corner_radius_std, border_width=0
-        )
-        inner_profiles_list_ctk_frame.grid(
-            row=1,
-            column=0,
-            sticky="nsew",
-            padx=self.padding_large,
-            pady=(0, self.padding_large),
-        )
-        initial_ocl_values = [["ID", "Profile Name", "Last Modified"]]
-        self.ocl_profiles_table = CTkTable(
-            master=inner_profiles_list_ctk_frame,
-            column=3,
-            values=initial_ocl_values,
-            command=self.on_ocl_profile_select_ctktable, # This method is defined later, usually fine for linters
-            font=self.default_font,
-            corner_radius=self.corner_radius_std,
-            hover_color=self.button_hover_color,
-        )
-        self.ocl_profiles_table.pack(
-            expand=True, fill="both", padx=self.padding_std, pady=self.padding_std
-        )
+        ocl_top_frame.grid_columnconfigure(0, weight=1)
 
-        ocl_bottom_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1) # Corrected indentation
+        customtkinter.CTkLabel(ocl_top_frame, text="Available BIOS Profiles", font=self.title_font).grid(row=0, column=0, padx=self.padding_large, pady=self.padding_std, sticky="w")
+
+        ocl_cols = ["ID", "Profile Name", "Last Modified"]
+        self.ocl_profiles_tree = ttk.Treeview(ocl_top_frame, columns=ocl_cols, show="headings", selectmode="browse")
+        for col in ocl_cols:
+            self.ocl_profiles_tree.heading(col, text=col, command=lambda c=col: self._sort_treeview_by_column(self.ocl_profiles_tree, c, False))
+            self.ocl_profiles_tree.column(col, width=120, anchor="w", stretch=True)
+        self.ocl_profiles_tree.grid(row=1, column=0, sticky="nsew", padx=self.padding_std, pady=self.padding_std)
+        vsb = ttk.Scrollbar(ocl_top_frame, orient="vertical", command=self.ocl_profiles_tree.yview)
+        self.ocl_profiles_tree.configure(yscrollcommand=vsb.set)
+        vsb.grid(row=1, column=1, sticky="ns")
+        hsb = ttk.Scrollbar(ocl_top_frame, orient="horizontal", command=self.ocl_profiles_tree.xview)
+        self.ocl_profiles_tree.configure(xscrollcommand=hsb.set)
+        hsb.grid(row=2, column=0, sticky="ew")
+        self.ocl_profiles_tree.bind("<<TreeviewSelect>>", self.on_ocl_profile_select)
+
+        # OCL Bottom Frame (Details & Actions)
+        ocl_bottom_frame = customtkinter.CTkFrame(ocl_tab_frame, corner_radius=self.corner_radius_soft, border_width=1)
         ocl_bottom_frame.grid(row=1, column=0, padx=self.padding_large, pady=(self.padding_std, self.padding_large), sticky="nsew")
-        ocl_bottom_frame.grid_columnconfigure(0, weight=1)
+        ocl_bottom_frame.grid_columnconfigure(0, weight=3)
+        ocl_bottom_frame.grid_columnconfigure(1, weight=1)
         ocl_bottom_frame.grid_rowconfigure(0, weight=1)
-        ocl_bottom_frame.grid_rowconfigure(1, weight=0)
-        profile_details_outer_ctk_frame = customtkinter.CTkFrame(
-            ocl_bottom_frame, fg_color="transparent", border_width=0
-        )
-        profile_details_outer_ctk_frame.grid(
-            row=0,
-            column=0,
-            sticky="nsew",
-            padx=self.padding_large,
-            pady=(0, self.padding_std),
-        )
-        profile_details_outer_ctk_frame.grid_columnconfigure(0, weight=1)
-        profile_details_outer_ctk_frame.grid_rowconfigure(1, weight=1)
 
-        customtkinter.CTkLabel(
-            master=profile_details_outer_ctk_frame,
-            text="Profile Details",
-            font=self.title_font,
-        ).grid(
-            row=0, column=0, padx=0, pady=(self.padding_std + 3, self.padding_std + 3)
-        )
-        inner_profile_details_ctk_frame = customtkinter.CTkFrame(
-            profile_details_outer_ctk_frame,
-            corner_radius=self.corner_radius_std,
-            border_width=0,
-        )
-        inner_profile_details_ctk_frame.grid(
-            row=1, column=0, sticky="nsew", padx=0, pady=(0, self.padding_large)
-        )
-        self.ocl_profile_details_text = customtkinter.CTkTextbox(
-            master=inner_profile_details_ctk_frame,
-            wrap=tk.WORD,
-            state=tk.DISABLED,
-            height=100,
-            font=self.default_font,
-            corner_radius=self.corner_radius_std,
-            border_width=1,
-        )
-        self.ocl_profile_details_text.pack(
-            expand=True, fill="both", padx=self.padding_std, pady=self.padding_std
-        )
+        # Details View
+        details_frame = customtkinter.CTkFrame(ocl_bottom_frame, corner_radius=self.corner_radius_std)
+        details_frame.grid(row=0, column=0, sticky="nsew", padx=(self.padding_large, self.padding_std), pady=self.padding_large)
+        details_frame.grid_rowconfigure(1, weight=1)
+        details_frame.grid_columnconfigure(0, weight=1)
+        customtkinter.CTkLabel(details_frame, text="Selected Profile Details", font=self.title_font).grid(row=0, column=0, padx=self.padding_large, pady=self.padding_std, sticky="w")
+        self.ocl_profile_details_text = customtkinter.CTkTextbox(details_frame, wrap="word", state="disabled", font=self.default_font)
+        self.ocl_profile_details_text.grid(row=1, column=0, sticky="nsew", padx=self.padding_large, pady=(0, self.padding_large))
 
- # --- MODIFIED: OCL Action Buttons ---
-        actions_ctk_frame = customtkinter.CTkFrame(ocl_bottom_frame, fg_color="transparent", border_width=0)
-        actions_ctk_frame.grid(row=1, column=0, sticky="ew", padx=self.padding_large, pady=(self.padding_std, self.padding_large))
+        # Actions Panel
+        actions_panel = customtkinter.CTkFrame(ocl_bottom_frame, corner_radius=self.corner_radius_std)
+        actions_panel.grid(row=0, column=1, sticky="nsew", padx=(self.padding_std, self.padding_large), pady=self.padding_large)
+        actions_panel.grid_columnconfigure(0, weight=1)
 
-        self.ocl_refresh_button = customtkinter.CTkButton(master=actions_ctk_frame, text="Refresh List", command=self.refresh_ocl_profiles_list, font=self.button_font, corner_radius=self.corner_radius_soft)
-        self.ocl_refresh_button.pack(side=tk.LEFT, padx=(0, self.padding_std), pady=self.padding_std)
+        action_button_config = {
+            "font": self.button_font,
+            "corner_radius": self.corner_radius_soft,
+            "hover_color": self.button_hover_color,
+        }
 
-        # --- NEW: "New BIOS Profile" Button ---
-        self.ocl_new_bios_profile_button = customtkinter.CTkButton(master=actions_ctk_frame, text="New BIOS Profile...", command=self.create_new_bios_profile, font=self.button_font, corner_radius=self.corner_radius_soft)
-        self.ocl_new_bios_profile_button.pack(side=tk.LEFT, padx=self.padding_std, pady=self.padding_std)
+        self.ocl_refresh_button = customtkinter.CTkButton(actions_panel, text="Refresh List", command=self.refresh_ocl_profiles_list, **action_button_config)
+        self.ocl_refresh_button.grid(row=0, column=0, sticky="ew", padx=self.padding_large, pady=self.padding_std)
 
-        # --- NEW: "Import BIOS Profile" Button ---
-        self.ocl_import_bios_profile_button = customtkinter.CTkButton(master=actions_ctk_frame, text="Import BIOS Profile...", command=self.import_bios_profile, font=self.button_font, corner_radius=self.corner_radius_soft)
-        self.ocl_import_bios_profile_button.pack(side=tk.LEFT, padx=self.padding_std, pady=self.padding_std)
+        self.ocl_new_bios_profile_button = customtkinter.CTkButton(actions_panel, text="New BIOS Profile", command=self.create_new_bios_profile, **action_button_config)
+        self.ocl_new_bios_profile_button.grid(row=1, column=0, sticky="ew", padx=self.padding_large, pady=self.padding_std)
+
+        self.ocl_import_bios_profile_button = customtkinter.CTkButton(actions_panel, text="Import from File", command=self.import_bios_profile, **action_button_config)
+        self.ocl_import_bios_profile_button.grid(row=2, column=0, sticky="ew", padx=self.padding_large, pady=self.padding_std)
+
+        self.ocl_export_profile_button = customtkinter.CTkButton(actions_panel, text="Export Selected to File", command=self.export_selected_profile, state="disabled", **action_button_config)
+        self.ocl_export_profile_button.grid(row=3, column=0, sticky="ew", padx=self.padding_large, pady=self.padding_std)
         
-        self.ocl_edit_profile_button = customtkinter.CTkButton(master=actions_ctk_frame, text="Edit Profile", command=self.edit_selected_ocl_profile, font=self.button_font, corner_radius=self.corner_radius_soft)
-        self.ocl_edit_profile_button.pack(side=tk.LEFT, padx=self.padding_std, pady=self.padding_std)
-        
-        self.ocl_update_selected_button = customtkinter.CTkButton(master=actions_ctk_frame, text="Add Log Entry", command=self.update_selected_ocl_profile, font=self.button_font, corner_radius=self.corner_radius_soft)
-        self.ocl_update_selected_button.pack(side=tk.LEFT, padx=self.padding_std, pady=self.padding_std)
+        self.ocl_edit_profile_button = customtkinter.CTkButton(actions_panel, text="Edit Selected Profile", command=self.edit_selected_profile, state="disabled", **action_button_config)
+        self.ocl_edit_profile_button.grid(row=4, column=0, sticky="ew", padx=self.padding_large, pady=self.padding_std)
 
-        # Status Bar
-        self.status_bar = customtkinter.CTkLabel(
-            self, text="Ready", height=25, anchor="w", font=self.default_font
-        )
-        self.status_bar.pack(
-            side=tk.BOTTOM,
-            fill=tk.X,
-            padx=self.padding_large,
-            pady=(self.padding_std, self.padding_std),
-        )
+        # Special config for delete button to override hover color
+        delete_button_config = action_button_config.copy()
+        del delete_button_config['hover_color']
 
-        # Load profiles on startup (AFTER status bar is created)
+        self.ocl_delete_profile_button = customtkinter.CTkButton(actions_panel, text="Delete Selected", command=self.delete_selected_profile, state="disabled", fg_color="#D32F2F", hover_color="#B71C1C", **delete_button_config)
+        self.ocl_delete_profile_button.grid(row=5, column=0, sticky="ew", padx=self.padding_large, pady=(self.padding_std, self.padding_large))
+
+        # --- Status Bar ---
+        self.status_bar = customtkinter.CTkLabel(self, text="Ready", anchor="w", padx=self.padding_large)
+        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X, pady=(self.padding_std, 0))
+
+
+    def _prompt_devenv_audit_after_inventory(self):
+
+        # Show a modal dialog: "Initial scan complete, scan devenvaudit now?" Yes/No
+        dialog = customtkinter.CTkToplevel(self)
+        dialog.title("Continue?")
+        dialog.geometry("350x150")
+        label = customtkinter.CTkLabel(dialog, text="Initial scan complete. Scan Developer Environment Audit now?", wraplength=320)
+        label.pack(padx=20, pady=(30,10))
+        def on_yes():
+            dialog.destroy()
+            self.start_devenv_audit_scan()
+        def on_no():
+            dialog.destroy()
+            self.update_status_bar("DevEnvAudit scan skipped.", clear_after_ms=4000)
+        btn_frame = customtkinter.CTkFrame(dialog)
+        btn_frame.pack(pady=10)
+        yes_btn = customtkinter.CTkButton(btn_frame, text="Yes", command=on_yes, width=100)
+        yes_btn.pack(side="left", padx=10)
+        no_btn = customtkinter.CTkButton(btn_frame, text="No", command=on_no, width=100)
+        no_btn.pack(side="left", padx=10)
+        dialog.grab_set()
+        dialog.wait_window()
+
+
+    def perform_initial_scans(self):
+        """Performs the initial data scans after the UI is loaded. (No longer runs scans automatically.)"""
         self.refresh_ocl_profiles_list()
+        # Only update status bar if it is initialized
+        if hasattr(self, 'status_bar') and self.status_bar:
+            self.update_status_bar("Ready.")
+        # No automatic scan on startup. User must click scan buttons.
 
-    def create_new_bios_profile(self):
-        """Opens the OCL Profile Editor to create a new profile."""
-        logging.info("Opening OCL Profile Editor in 'create' mode.")
-        
-        new_profile_obj = Profile(name="New BIOS Profile", description="A detailed BIOS profile.")
-        
-        editor = OclProfileEditor(master=self, mode='create', profile_obj=new_profile_obj, callback=self._save_profile_from_editor)
-        # editor will be garbage collected if not assigned or kept alive, but CTkToplevel might manage its own lifecycle.
-
-    def refresh_ocl_profiles_list(self):
-        """Refreshes the list of OCL profiles in the GUI table."""
-        if self.ocl_profiles_table is None:
-            logging.warning("refresh_ocl_profiles_list: ocl_profiles_table is not initialized.")
+    def start_system_inventory_scan(self, on_finish_callback=None):
+        # Only block if a scan is already in progress and this is a user-initiated scan (not a callback chain)
+        if self.scan_in_progress and on_finish_callback is None:
+            show_custom_messagebox(self, "Scan In Progress", "A scan is already in progress. Please wait for it to complete.", dialog_type="info")
             return
+        self.scan_in_progress = True
+        self.update_status_bar("Starting System Inventory scan...")
+        if self.inventory_scan_button: self.inventory_scan_button.configure(state=customtkinter.DISABLED)
+        if self.devenv_audit_button: self.devenv_audit_button.configure(state=customtkinter.DISABLED)
 
-        # Clear existing rows except header
-        for i in range(len(self.ocl_profiles_table.values) -1, 0, -1):
-            self.ocl_profiles_table.delete_row(i)
-        
-        # If only header exists and it's not the default, reset it (optional, good for robustness)
-        if len(self.ocl_profiles_table.values) == 0 or self.ocl_profiles_table.values[0] != ["ID", "Profile Name", "Last Modified"]:
-            self.ocl_profiles_table.update_values([["ID", "Profile Name", "Last Modified"]])
+        # Run the scan in a separate thread to keep the UI responsive
+        scan_thread = Thread(target=self.run_system_inventory_scan_thread, args=(on_finish_callback,))
+        scan_thread.daemon = True
+        scan_thread.start()
 
-
+    def run_system_inventory_scan_thread(self, on_finish_callback=None):
         try:
-            profiles = ocl_api.get_all_profiles()
-            if profiles:
-                for profile in profiles:
-                    # Ensure last_modified is a string, format if it's a date object
-                    last_modified_str = profile.get('last_modified', 'N/A')
-                    if isinstance(last_modified_str, datetime.datetime):
-                        last_modified_str = last_modified_str.strftime('%Y-%m-%d %H:%M:%S')
-                    
-                    self.ocl_profiles_table.add_row([
-                        str(profile.get('id', 'N/A')),
-                        str(profile.get('name', 'N/A')),
-                        last_modified_str
-                    ])
-                if self.status_bar: self.status_bar.configure(text=f"{len(profiles)} OCL profiles loaded.")
-            else:
-                # Add a placeholder row if no profiles are found
-                self.ocl_profiles_table.add_row(["-", "No profiles found", "-"])
-                if self.status_bar: self.status_bar.configure(text="No OCL profiles found in the database.")
-            
-            # After refreshing, clear selection and details view
-            self.selected_ocl_profile_id = None
-            if self.ocl_profile_details_text:
-                self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
-                self.ocl_profile_details_text.delete("0.0", tk.END)
-                self.ocl_profile_details_text.insert("0.0", "Select a profile to view details.")
-                self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
-
+            self.system_inventory_results = get_installed_software(calculate_disk_usage_flag=True)
+            self.after(0, self.update_inventory_display)
         except Exception as e:
-            logging.error(f"Error refreshing OCL profiles list: {e}", exc_info=True)
-            if self.status_bar: self.status_bar.configure(text="Error loading OCL profiles.")
-            # Optionally show a messagebox
-            show_custom_messagebox(self, "OCL Error", f"Could not refresh profiles: {e}", "error")
-            # Add a placeholder error row
-            if len(self.ocl_profiles_table.values) <= 1: # if only header or empty
-                 self.ocl_profiles_table.add_row(["-", "Error loading profiles", "-"])
-
-
-    def inventory_scan_error(self, error_exception):
-        """Handles errors that occur during the system inventory scan thread."""
-        error_message = f"System Inventory scan failed: {error_exception}"
-        logging.error(error_message, exc_info=True) # Log with stack trace
-        if self.status_bar:
-            self.status_bar.configure(text=error_message)
-        
-        # Ensure UI elements are reset to a usable state
-        # self.finalize_scan_ui_state() # This will be called by the thread's finally block
-
-        # Inform the user
-        show_custom_messagebox(
-            self, 
-            "Scan Error", 
-            f"An error occurred during the System Inventory scan: {error_exception}",
-            dialog_type="error"
-        )
-        # Optionally, update the inventory display to show an error message
-        if self.inventory_table:
-            self.update_inventory_display([{"DisplayName": "Error during scan", "Remarks": str(error_exception), "Category": "Error"}])
-
-
-    def import_bios_profile(self):
-        """Imports a BIOS profile from a JSON file."""
-        # Directly use the globally managed CTkFileDialog variable
-        # It's either the real CTkFileDialog or the _BaseCTkFileDialogPlaceholder
-        dialog = CTkFileDialog(title="Select BIOS Profile JSON File") # Removed master, filetypes
-        filepath = dialog.path # Access .path directly
-
-        if not filepath: # Placeholder's get() returns None, real one returns None on cancel
-            logging.info("BIOS profile import cancelled or file dialog not available.")
-            if isinstance(CTkFileDialog, _BaseCTkFileDialogPlaceholder): # Check if it was the placeholder
-                 show_custom_messagebox(self, "File Dialog Info", "File selection was cancelled or the dialog is not fully functional.", "info")
+            logging.error(f"Error during System Inventory scan: {e}", exc_info=True)
+            self.after(0, lambda: self.update_status_bar(f"System Inventory scan failed: {e}", is_error=True))
+            # Ensure scan_in_progress is reset even if scan fails
+            self.after(0, self.finalize_scan, None)
             return
+        self.after(0, self.finalize_scan, on_finish_callback)
 
-        try:
-            profile_obj = load_from_json_file(filepath)
-            if profile_obj:
-                flat_settings = Profile.to_flat_list(profile_obj.settings)
-                
-                profile_id = ocl_api.create_new_profile(
-                    name=profile_obj.name,
-                    description=profile_obj.description,
-                    initial_settings=flat_settings,
-                    initial_logs=[f"Profile imported from {os.path.basename(filepath)}"]
-                )
-                if profile_id:
-                    show_custom_messagebox(self, "Import Success", f"Successfully imported '{profile_obj.name}' into the database.", "info")
-                    self.refresh_ocl_profiles_list()
-                else:
-                    show_custom_messagebox(self, "Import Error", "Failed to save the imported profile to the database.", "error")
-            else:
-                show_custom_messagebox(self, "Import Error", "Could not read or parse the selected JSON file.", "error")
-        except Exception as e:
-            logging.error(f"Error during BIOS profile import: {e}", exc_info=True)
-            show_custom_messagebox(self, "Import Error", f"An unexpected error occurred: {e}", "error")
-
-    def edit_selected_ocl_profile(self):
-        """Opens the selected OCL profile in the new editor UI."""
-        if self.selected_ocl_profile_id is None:
-            show_custom_messagebox(self, "No Profile Selected", "Please select a profile to edit.", "warning")
-            return
-
-        logging.info(f"Opening OCL Profile Editor in 'edit' mode for ID: {self.selected_ocl_profile_id}")
-        details = ocl_api.get_profile_details(self.selected_ocl_profile_id)
-
-        if not details:
-            show_custom_messagebox(self, "Error", f"Could not fetch details for profile ID: {self.selected_ocl_profile_id}.", "error")
-            return
-
-        profile_to_edit = Profile(
-            name=str(details.get("name", "Default Name")), # Ensure string type
-            description=str(details.get("description", "")), # Ensure string type
-            profile_id=details.get("id")
-        )
-        flat_settings_from_db = details.get("settings", [])
-        profile_to_edit.settings = Profile.from_flat_list(flat_settings_from_db)
-        
-        editor = OclProfileEditor(master=self, mode='edit', profile_obj=profile_to_edit, callback=self._save_profile_from_editor)
-
-    def _save_profile_from_editor(self, profile_obj: Profile, mode: str): # Added mode parameter
-        """Callback function for the OclProfileEditor to save data."""
-        profile_id = None # Initialize profile_id to ensure it's bound
-        # The profile_obj.settings are already hierarchical from the editor
-        flat_settings = Profile.to_flat_list(profile_obj.settings)
-        
-        try:
-            if mode == 'edit' and profile_obj.id is not None: # Use explicit mode
-                # Update existing profile
-                success = ocl_api.update_existing_profile(
-                    profile_id=profile_obj.id,
-                    name=profile_obj.name,
-                    description=profile_obj.description,
-                    settings_to_update=flat_settings # API expects flat list to replace all settings
-                )
-                if success:
-                    show_custom_messagebox(self, "Success", f"Profile '{profile_obj.name}' updated successfully.", "info")
-                else:
-                    raise Exception("API returned failure on update.")
-            elif mode == 'create': # Use explicit mode
-                # Create new profile
-                # Ensure profile_id is assigned the result of create_new_profile
-                profile_id = ocl_api.create_new_profile(
-                    name=profile_obj.name,
-                    description=profile_obj.description,
-                    initial_settings=flat_settings
-                    # Consider if initial_logs should be added here for new profiles from editor
-                )
-                if profile_id:
-                     show_custom_messagebox(self, "Success", f"New profile '{profile_obj.name}' created successfully with ID: {profile_id}.", "info")
-                else:
-                    raise Exception("API returned no ID on creation.")
-            else:
-                raise ValueError(f"Invalid mode '{mode}' received in _save_profile_from_editor.")
-            
-            self.refresh_ocl_profiles_list()
-            # Optionally, try to reselect the profile if it was an edit
-            if mode == 'edit' and profile_obj.id is not None:
-                self.selected_ocl_profile_id = profile_obj.id
-                self.after(100, self._reselect_ocl_profile_after_update) 
-            elif mode == 'create' and profile_id: # If new profile was created and we got an ID
-                self.selected_ocl_profile_id = profile_id
-                self.after(100, self._reselect_ocl_profile_after_update)
-
-
-        except Exception as e:
-            logging.error(f"Failed to save profile from editor (mode: {mode}): {e}", exc_info=True)
-            show_custom_messagebox(self, "Save Error", f"Could not save the profile to the database: {e}", "error")
-
-    def _reselect_ocl_profile_after_update(self):
-        """Refreshes the OCL profile details display area for the currently selected profile."""
-        if self.selected_ocl_profile_id is None:
-            if self.ocl_profile_details_text:
-                self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
-                self.ocl_profile_details_text.delete("0.0", tk.END)
-                self.ocl_profile_details_text.insert("0.0", "Select a profile to view details.")
-                self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
-            return
-
-        details = ocl_api.get_profile_details(self.selected_ocl_profile_id)
-        if self.ocl_profile_details_text:
-            self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
-            self.ocl_profile_details_text.delete("0.0", tk.END)
-            if details:
-                display_text = f"Profile: {details.get('name', 'N/A')} (ID: {details.get('id')})\\n"
-                display_text += f"Description: {details.get('description', 'N/A')}\\n\\n"
-                display_text += "Settings:\\n"
-                if details.get("settings"):
-                    for setting in details.get("settings", []):
-                        display_text += f"  - {setting.get('category', 'N/A')} -> {setting.get('setting_name', 'N/A')}: {setting.get('setting_value', 'N/A')} (Type: {setting.get('value_type', 'str')})\\n"
-                else:
-                    display_text += "  (No settings for this profile)\\n"
-                display_text += "\\nLogs:\\n"
-                if details.get("logs"):
-                    for log_entry in details.get("logs", []):
-                        display_text += f"  - [{log_entry.get('timestamp', 'N/A')}]: {log_entry.get('log_text', 'N/A')}\\n"
-                else:
-                    display_text += "  (No logs for this profile)\\n"
-                self.ocl_profile_details_text.insert("0.0", display_text)
-            else:
-                self.ocl_profile_details_text.insert("0.0", f"Could not retrieve details for profile ID: {self.selected_ocl_profile_id}. It may have been deleted.")
-                self.selected_ocl_profile_id = None # Clear selection if invalid
-            self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
-
-    def update_selected_ocl_profile(self):
-        """Adds a new log entry to the selected OCL profile."""
-        if self.selected_ocl_profile_id is None:
-            show_custom_messagebox(self, "No Profile Selected", "Please select a profile to add a log to.", "warning")
-            return
-
-        dialog = customtkinter.CTkInputDialog(
-            text="Enter log message:", 
-            title="Add Log Entry"
-        )
-        # This method might need to be called on self (the root window) or a Toplevel if SystemSageApp is the root.
-        # If CTkInputDialog needs a master, it would be 'self'. Assuming it works globally or self is implicit.
-        log_text = dialog.get_input() 
-
-        if log_text: # User entered something and didn't cancel
-            try:
-                success = ocl_api.add_log_to_profile(self.selected_ocl_profile_id, log_text)
-                if success:
-                    show_custom_messagebox(self, "Log Added", "Log entry added successfully.", "info")
-                    self.refresh_ocl_profiles_list() # Refresh list (for Last Modified)
-                    # Schedule the detail refresh after the list has had a chance to update
-                    self.after(150, self._reselect_ocl_profile_after_update) 
-                else:
-                    show_custom_messagebox(self, "Error", "Failed to add log entry to the database.", "error")
-            except Exception as e:
-                logging.error(f"Error adding log entry: {e}", exc_info=True)
-                show_custom_messagebox(self, "Error", f"An unexpected error occurred while adding log: {e}", "error")
-        else:
-            logging.info("Add log entry cancelled by user.")
-
-    # --- DEPRECATED METHOD ---
-    # We no longer need this complex, dialog-based method.
-    def save_system_as_new_ocl_profile(self):
-        show_custom_messagebox(self, "Action Changed", "This action has been replaced. Please use 'New BIOS Profile' to open the detailed editor or 'Import BIOS Profile' for JSON files.", "info")
-        logging.warning("'save_system_as_new_ocl_profile' called, but is deprecated. User has been notified.")
-        # All the old logic below this line in the original file should be removed.
-        # The method should effectively end here.
-        return
-
-
-    def _update_action_buttons_state(self, state):
-        button_state = (
-            customtkinter.NORMAL if state == tk.NORMAL else customtkinter.DISABLED
-        )
-        if self.inventory_scan_button:
-            if not IS_WINDOWS:
-                self.inventory_scan_button.configure(state=customtkinter.DISABLED)
-            else:
-                self.inventory_scan_button.configure(state=button_state)
-        if self.devenv_audit_button:
-            self.devenv_audit_button.configure(state=button_state)
-
-    def start_system_inventory_scan(self):
-        if self.scan_in_progress and IS_WINDOWS:
-            show_custom_messagebox(
-                self,
-                "Scan In Progress",
-                "A scan is already running.",
-                dialog_type="warning",
-            )
-            return
-        if not IS_WINDOWS:
-            if self.status_bar:
-                self.status_bar.configure(
-                    text="System Inventory (Registry Scan) is Windows-only."
-                )
-            placeholder_inventory = get_installed_software(False)
-            self.update_inventory_display(placeholder_inventory)
-            return
-        else:  # IS_WINDOWS is True
-            self.scan_in_progress = True
-            if self.status_bar:
-                self.status_bar.configure(text="Starting System Inventory Scan...")
-            self._update_action_buttons_state(customtkinter.DISABLED)
-            if self.inventory_table:
-                self.inventory_table.delete_rows(
-                    list(range(len(self.inventory_table.values)))
-                )
-            calc_disk = (
-                self.cli_args.calculate_disk_usage
-                if self.cli_args
-                else DEFAULT_CALCULATE_DISK_USAGE
-            )
-            thread = Thread(
-                target=self.run_system_inventory_thread, args=(calc_disk,), daemon=True
-            )
-            thread.start()
-
-    def run_system_inventory_thread(self, calculate_disk_usage_flag):
-        try:
-            software_list = get_installed_software(calculate_disk_usage_flag)
-            self.system_inventory_results = software_list # Store results
-            self.after(0, self._update_inventory_display_from_thread, software_list)
-            self.save_system_inventory_report(software_list)
-        except Exception as e:
-            logging.error(
-                f"Error in system inventory thread: {e}\n{traceback.format_exc()}"
-            )
-            self.after(0, self._inventory_scan_error_from_thread, e)
-        finally:
-            self.after(0, self.finalize_scan_ui_state) # Centralized call
-
-    def _update_inventory_display_from_thread(self, software_list):
-        """Helper to call inventory display update from thread."""
-        self.update_inventory_display(software_list)
-        if self.status_bar:
-            self.status_bar.configure(text="System Inventory Scan completed.")
-
-    def _inventory_scan_error_from_thread(self, error_exception):
-        """Helper to call inventory error handler from thread."""
-        self.inventory_scan_error(error_exception)
-
-    def save_system_inventory_report(self, software_list):
-        output_dir = "output_data/system_inventory/"
-        try:
-            os.makedirs(output_dir, exist_ok=True)
-            filename = f"system_inventory_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
-            full_path = os.path.join(output_dir, filename)
-
-              # Prepare data for JSON dump. software_list is a list of dictionaries.
-            # We can wrap it for consistency or add metadata.
-            report_data = {
-                "report_generated_at": datetime.datetime.now().isoformat(),
-                "system_inventory": software_list
-            }
-            with open(full_path, "w", encoding="utf-8") as f:
-                json.dump(report_data, f, ensure_ascii=False, indent=4)
-            logging.info(f"System inventory report successfully saved to {full_path}")
-        except Exception as e:
-            logging.error(f"Error saving system inventory report: {e}")
-
-    # --- DevEnv Audit Scan Methods ---
-    def _clear_devenv_tables(self):
-        """Clears the DevEnv audit tables and resets headers."""
-        comp_cols_list = ["ID", "Name", "Category", "Version", "Path", "Executable Path", "Source", "DB Name"]
-        env_cols_list = ["Name", "Value", "Scope"]
-        issue_cols_list = ["Severity", "Description", "Category", "Component ID", "Related Path"]
-
-        if self.devenv_components_table:
-            self.devenv_components_table.update_values([comp_cols_list])
-        if self.devenv_env_vars_table:
-            self.devenv_env_vars_table.update_values([env_cols_list])
-        if self.devenv_issues_table:
-            self.devenv_issues_table.update_values([issue_cols_list])
-
-    def start_devenv_audit_scan(self):
-        if self.scan_in_progress:
-            show_custom_messagebox(self, "Scan In Progress", "A scan is already running.", dialog_type="warning")
+    def start_devenv_audit_scan(self, on_finish_callback=None):
+        # Only block if a scan is already in progress and this is a user-initiated scan (not a callback chain)
+        if self.scan_in_progress and on_finish_callback is None:
+            show_custom_messagebox(self, "Scan In Progress", "A scan is already in progress. Please wait for it to complete.", dialog_type="info")
             return
 
         self.scan_in_progress = True
-        if self.status_bar:
-            self.status_bar.configure(text="Starting Developer Environment Audit...")
-        self._update_action_buttons_state(customtkinter.DISABLED)
-        self._clear_devenv_tables()
+        self.update_status_bar("Starting Developer Environment Audit...")
+        if self.inventory_scan_button: self.inventory_scan_button.configure(state=customtkinter.DISABLED)
+        if self.devenv_audit_button: self.devenv_audit_button.configure(state=customtkinter.DISABLED)
 
-        # Clear previous results
-        self.devenv_components_results = []
-        self.devenv_env_vars_results = []
-        self.devenv_issues_results = []
+        scan_thread = Thread(target=self.run_devenv_audit_scan_thread, args=(on_finish_callback,))
+        scan_thread.daemon = True
+        scan_thread.start()
 
-        thread = Thread(target=self.run_devenv_audit_thread, daemon=True)
-        thread.start()
-
-    def run_devenv_audit_thread(self): # Corrected indentation
+    def run_devenv_audit_scan_thread(self, on_finish_callback=None):
         try:
-            # EnvironmentScanner loads its own configuration internally
-            scanner = EnvironmentScanner() 
-            # Corrected method call to run_scan()
-            components, env_vars, issues = scanner.run_scan() 
-         
-            # Store results
-            self.devenv_components_results = components if components else []
-            self.devenv_env_vars_results = env_vars if env_vars else []
-            self.devenv_issues_results = issues if issues else []
-            
-            self.after(0, self._update_devenv_audit_display_from_thread, components, env_vars, issues)
+            scanner = EnvironmentScanner()
+            (
+                self.devenv_components_results,
+                self.devenv_env_vars_results,
+                self.devenv_issues_results,
+            ) = scanner.run_scan() # Corrected method call
+            self.after(0, self.update_devenv_audit_display)
         except Exception as e:
-            logging.error(f"Error in DevEnv audit thread: {e}\\n{traceback.format_exc()}")
-            self.after(0, self._devenv_audit_error_from_thread, e)
-        finally:
-            self.after(0, self.finalize_scan_ui_state)
+            logging.error(f"Error during DevEnv Audit scan: {e}", exc_info=True)
+            self.after(0, lambda: self.update_status_bar(f"DevEnv Audit scan failed: {e}", is_error=True))
+            # Ensure scan_in_progress is reset even if scan fails
+            self.after(0, self.finalize_scan, None)
+            return
+        self.after(0, self.finalize_scan, on_finish_callback)
 
-    def _devenv_audit_error_from_thread(self, error_exception):
-        """Helper to call devenv audit error handler from thread."""
-        # Assuming self.devenv_audit_error method is defined to handle the error
-        self.devenv_audit_error(error_exception)
-
-    def _update_devenv_audit_display_from_thread(self, components, env_vars, issues):
-        """Helper to call DevEnv display update from thread."""
-        self.update_devenv_audit_display(components, env_vars, issues)
-        if self.status_bar:
-            self.status_bar.configure(text="Developer Environment Audit completed.")
-        # self.finalize_scan_ui_state() # Called by the thread's finally block
-
-    def update_devenv_audit_display(self, components, env_vars, issues):
-        # Update Components Table
-        if self.devenv_components_table:
-            comp_cols_list = ["ID", "Name", "Category", "Version", "Path", "Executable Path", "Source", "DB Name"]
-            comp_values = [comp_cols_list]
-            if components:
-                for comp in components:
-                    c = comp.to_dict()
-                    comp_values.append([
-                        str(c.get("id", "N/A")), str(c.get("name", "N/A")), str(c.get("category", "N/A")),
-                        str(c.get("version", "N/A")), str(c.get("path", "N/A")), str(c.get("executable_path", "N/A")),
-                        str(c.get("source", "N/A")), str(c.get("db_name", "N/A"))
-                    ])
-            else:
-                comp_values.append(["No components detected.", "", "", "", "", "", "", ""])
-            self.devenv_components_table.update_values(comp_values)
-
-        # Update Environment Variables Table
-        if self.devenv_env_vars_table:
-            env_cols_list = ["Name", "Value", "Scope"]
-            env_values = [env_cols_list]
-            if env_vars:
-                for ev in env_vars:
-                    e = ev.to_dict()
-                    env_values.append([
-                        str(e.get("name", "N/A")), str(e.get("value", "N/A")), str(e.get("scope", "N/A"))
-                    ])
-            else:
-                env_values.append(["No environment variables detected.", "", ""])
-            self.devenv_env_vars_table.update_values(env_values)
-
-        # Update Identified Issues Table
-        if self.devenv_issues_table:
-            issue_cols_list = ["Severity", "Description", "Category", "Component ID", "Related Path"]
-            issue_values = [issue_cols_list]
-            if issues:
-                for issue in issues:
-                    i = issue.to_dict()
-                    issue_values.append([
-                        str(i.get("severity", "N/A")), str(i.get("description", "N/A")), str(i.get("category", "N/A")),
-                        str(i.get("component_id", "N/A")), str(i.get("related_path", "N/A"))
-                    ])
-            else:
-                issue_values.append(["No issues identified.", "", "", "", ""])
-            self.devenv_issues_table.update_values(issue_values)
-
-    def devenv_audit_error(self, error_exception):
-        error_message = f"DevEnv Audit scan failed: {error_exception}"
-        logging.error(error_message, exc_info=True)
-        if self.status_bar:
-            self.status_bar.configure(text=error_message)
-        
-        show_custom_messagebox(
-            self, 
-            "DevEnv Audit Error", 
-            f"An error occurred during the Developer Environment Audit: {error_exception}",
-            dialog_type="error"
-        )
-        # Optionally, update the devenv tables to show an error message
-        self._clear_devenv_tables() # Clear tables first
-        if self.devenv_components_table:
-             self.devenv_components_table.add_row([f"Error: {error_exception}", "", "", "", "", "", "", ""])
-
-
-    def finalize_scan_ui_state(self):
+    def finalize_scan(self, on_finish_callback=None):
+        """
+        Finalizes a scan step. If a callback is provided, it executes it (to chain scans).
+        If no callback, it means the chain is complete, so re-enable UI elements.
+        """
         self.scan_in_progress = False
-        self._update_action_buttons_state(customtkinter.NORMAL)
+        if on_finish_callback and callable(on_finish_callback):
+            self.update_status_bar("Scan step finished. Starting next scan...", clear_after_ms=3000)
+            on_finish_callback()
+        else:
+            if self.inventory_scan_button: self.inventory_scan_button.configure(state=customtkinter.NORMAL)
+            if self.devenv_audit_button: self.devenv_audit_button.configure(state=customtkinter.NORMAL)
+            if not IS_WINDOWS and self.inventory_scan_button:
+                self.inventory_scan_button.configure(state=customtkinter.DISABLED)
+            self.update_status_bar("All scans finished. Ready.", clear_after_ms=5000)
 
-    def update_inventory_display(self, software_list):
-        if self.inventory_table:
-            header = [
-                "Name",
-                "Version",
-                "Publisher",
-                "Path",
-                "Size",
-                "Status",
-                "Remarks",
-                "SourceHive",
-                "RegKey",
+    def update_status_bar(self, message, is_error=False, clear_after_ms=0):
+        if not hasattr(self, 'status_bar') or not self.status_bar:
+            logging.warning("update_status_bar called before status_bar is initialized.")
+            return
+        
+        default_color = ("#FFFFFF" if customtkinter.get_appearance_mode() == "Dark" else "#000000")
+        color = "#FF5555" if is_error else default_color
+        self.status_bar.configure(text=message, text_color=color)
+
+        if clear_after_ms > 0:
+            def clear_status():
+                if self.status_bar:
+                    self.status_bar.configure(text="Ready", text_color=default_color)
+            self.after(clear_after_ms, clear_status)
+
+
+    def update_inventory_display(self):
+        if not hasattr(self, 'inventory_tree') or not self.inventory_tree:
+            return
+        inv_cols = ["Name", "Version", "Publisher", "Path", "Size", "Status", "Remarks", "SourceHive", "RegKey"]
+        # Clear current rows
+        for row in self.inventory_tree.get_children():
+            self.inventory_tree.delete(row)
+
+        # Filtering
+        filter_text = self.inventory_filter_var.get().lower() if hasattr(self, 'inventory_filter_var') else ""
+        filtered_results = []
+        for item in self.system_inventory_results:
+            row = [
+                item.get("DisplayName", "N/A"),
+                item.get("DisplayVersion", "N/A"),
+                item.get("Publisher", "N/A"),
+                item.get("InstallLocation", "N/A"),
+                item.get("InstallLocationSize", "N/A"),
+                item.get("PathStatus", "N/A"),
+                item.get("Remarks", ""),
+                item.get("SourceHive", "N/A"),
+                item.get("RegistryKeyPath", "N/A"),
             ]
-            table_values = [header]  # Start with the header
+            if not filter_text or any(filter_text in str(cell).lower() for cell in row):
+                filtered_results.append(row)
+        for row in filtered_results:
+            self.inventory_tree.insert("", "end", values=row)
+        self.update_status_bar(f"System Inventory updated with {len(filtered_results)} items.", clear_after_ms=4000)
 
-            if not software_list:
-                # If the list is completely empty, add a placeholder that respects columns
-                placeholder = ["No software found.", "", "", "", "", "", "", "", ""]
-                table_values.append(placeholder)
-            elif (
-                len(software_list) == 1
-                and software_list[0].get("Category") == "Informational"
-            ):
-                # Handle the specific non-Windows placeholder message
-                placeholder = [
-                    software_list[0].get("Remarks", "N/A"),
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                ]
-                table_values.append(placeholder)
-            else:
-                # Populate with actual software data
-                for app in software_list:
-                    table_values.append(
-                        [
-                            str(app.get("DisplayName", "N/A")),
-                            str(app.get("DisplayVersion", "N/A")),
-                            str(app.get("Publisher", "N/A")),
-                            str(app.get("InstallLocation", "N/A")),
-                            str(app.get("InstallLocationSize", "N/A")),
-                            str(app.get("PathStatus", "N/A")),
-                            str(app.get("Remarks", "")),
-                            str(app.get("SourceHive", "N/A")),
-                            str(app.get("RegistryKeyPath", "N/A")),
-                        ]
-                    )
-
-            self.inventory_table.update_values(table_values)
-    def on_ocl_profile_select_ctktable(self, selection_data):
-        selected_data_row_index = selection_data.get("row")
-        if selected_data_row_index is None:
-            logging.debug("on_ocl_profile_select_ctktable: No row index in selection_data.")
+    def _sort_inventory_by_column(self, col, reverse):
+        if not self.inventory_tree:
             return
-
-        profile_id_val_str = None
-        selected_row_values = None
-        
-        # The CTkTable returns the index of the clicked row in the currently displayed data.
-        # If the table has a header row at index 0 of its internal 'values' list, 
-        # and the user clicks the first data row, 'selected_data_row_index' will be 0.
-        # The actual data in `self.ocl_profiles_table.values` would be at `selected_data_row_index + 1`
-        # if `self.ocl_profiles_table.values[0]` is the header.
-        # However, CTkTable's `command` usually gives the index relative to data rows if header is configured.
-        # Let's assume `selected_data_row_index` is the 0-based index of the *data* row clicked.
-        # So, if `self.ocl_profiles_table.values[0]` is header, data starts at `self.ocl_profiles_table.values[selected_data_row_index + 1]`.
-        data_list_index = selected_data_row_index + 1 # Index in the .values list, assuming header is values[0]
-
-        if self.ocl_profiles_table is None or not hasattr(self.ocl_profiles_table, "values"):
-            logging.warning("on_ocl_profile_select_ctktable: ocl_profiles_table is not initialized or has no values.")
-            return
-
-        if not (1 <= data_list_index < len(self.ocl_profiles_table.values)): 
-            logging.warning(f"on_ocl_profile_select_ctktable: Selection index {selected_data_row_index} (data list index {data_list_index}) is out of bounds for table with {len(self.ocl_profiles_table.values)} total rows (incl. header).")
-            # This can happen if the table is empty or only has a header and it's clicked.
-            self.selected_ocl_profile_id = None
-            if self.ocl_profile_details_text:
-                self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
-                self.ocl_profile_details_text.delete("0.0", tk.END)
-                self.ocl_profile_details_text.insert("0.0", "No profile selected or table is empty.")
-                self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
-            return
-        
+        data = []
+        for k in self.inventory_tree.get_children(""):
+            try:
+                v = self.inventory_tree.set(k, col)
+            except Exception:
+                v = ""
+            data.append((v, k))
+        def safe_key(val):
+            s = str(val[0]) if val[0] is not None else ""
+            try:
+                return float(s) if s.replace('.', '', 1).isdigit() else s.lower()
+            except Exception:
+                return s.lower() if hasattr(s, 'lower') else s
         try:
-            selected_row_values = self.ocl_profiles_table.values[data_list_index]
-            profile_id_val_str = selected_row_values[0] 
+            data.sort(key=safe_key, reverse=reverse)
+        except Exception:
+            data.sort(key=lambda t: str(t[0]).lower() if t[0] is not None else "", reverse=reverse)
+        for index, (val, k) in enumerate(data):
+            try:
+                self.inventory_tree.move(k, '', index)
+            except Exception:
+                pass
+        self._inventory_sort_column = col
+        self._inventory_sort_reverse = not reverse
+        for c in self.inventory_tree['columns']:
+            txt = c
+            if c == col:
+                txt += ' ▲' if not reverse else ' ▼'
+            self.inventory_tree.heading(c, text=txt, command=lambda c=c: self._sort_inventory_by_column(c, not reverse))
 
-            if not str(profile_id_val_str).isdigit():
-                logging.info(f"on_ocl_profile_select_ctktable: Non-data row clicked or invalid ID. Content: '{profile_id_val_str}'")
-                self.selected_ocl_profile_id = None
+    def _clear_inventory_sort_state(self, event):
+        # Remove sort arrows from headings if user clicks elsewhere
+        if self._inventory_sort_column and self.inventory_tree:
+            for c in self.inventory_tree['columns']:
+                self.inventory_tree.heading(c, text=c, command=lambda c=c: self._sort_inventory_by_column(c, False))
+            self._inventory_sort_column = None
+            self._inventory_sort_reverse = False
+
+
+    def update_devenv_audit_display(self):
+        # Components
+        if hasattr(self, 'devenv_components_tree') and self.devenv_components_tree:
+            comp_cols = ["ID", "Name", "Category", "Version", "Path", "Executable Path", "Source", "DB Name"]
+            for row in self.devenv_components_tree.get_children():
+                self.devenv_components_tree.delete(row)
+            if self.devenv_components_results:
+                for comp in self.devenv_components_results:
+                    row = [
+                        getattr(comp, 'id', 'N/A'), getattr(comp, 'name', 'N/A'), getattr(comp, 'category', 'N/A'),
+                        getattr(comp, 'version', 'N/A') or "N/A", getattr(comp, 'path', 'N/A') or "N/A",
+                        getattr(comp, 'executable_path', 'N/A') or "N/A", getattr(comp, 'source_detection', 'N/A') or "N/A", getattr(comp, 'matched_db_name', 'N/A') or "N/A"
+                    ]
+                    self.devenv_components_tree.insert("", "end", values=row)
+
+        # Env Vars
+        if hasattr(self, 'devenv_env_vars_tree') and self.devenv_env_vars_tree:
+            env_cols = ["Name", "Value", "Scope"]
+            for row in self.devenv_env_vars_tree.get_children():
+                self.devenv_env_vars_tree.delete(row)
+            if self.devenv_env_vars_results:
+                for var in self.devenv_env_vars_results:
+                    row = [var.name, var.value, var.scope]
+                    self.devenv_env_vars_tree.insert("", "end", values=row)
+
+        # Issues
+        if hasattr(self, 'devenv_issues_tree') and self.devenv_issues_tree:
+            issue_cols = ["Severity", "Description", "Category", "Component ID", "Related Path"]
+            for row in self.devenv_issues_tree.get_children():
+                self.devenv_issues_tree.delete(row)
+            if self.devenv_issues_results:
+                for issue in self.devenv_issues_results:
+                    row = [
+                        issue.severity, issue.description, issue.category,
+                        issue.component_id or "N/A", issue.related_path or "N/A"
+                    ]
+                    self.devenv_issues_tree.insert("", "end", values=row)
+        self.update_status_bar(f"DevEnv Audit updated with {len(self.devenv_components_results)} components and {len(self.devenv_issues_results)} issues.", clear_after_ms=4000)
+
+    def _sort_treeview_by_column(self, tree, col, reverse):
+        if not tree:
+            return
+        data = []
+        for k in tree.get_children(""):
+            try:
+                v = tree.set(k, col)
+            except Exception:
+                v = ""
+            data.append((v, k))
+        def safe_key(val):
+            s = str(val[0]) if val[0] is not None else ""
+            try:
+                return float(s) if s.replace('.', '', 1).isdigit() else s.lower()
+            except Exception:
+                return s.lower() if hasattr(s, 'lower') else s
+        try:
+            data.sort(key=safe_key, reverse=reverse)
+        except Exception:
+            data.sort(key=lambda t: str(t[0]).lower() if t[0] is not None else "", reverse=reverse)
+        for index, (val, k) in enumerate(data):
+            try:
+                tree.move(k, '', index)
+            except Exception:
+                pass
+        if not hasattr(tree, '_sort_column'):
+            tree._sort_column = None
+            tree._sort_reverse = False
+        tree._sort_column = col
+        tree._sort_reverse = not reverse
+        for c in tree['columns']:
+            txt = c
+            if c == col:
+                txt += ' ▲' if not reverse else ' ▼'
+            tree.heading(c, text=txt, command=lambda c=c: self._sort_treeview_by_column(tree, c, not reverse))
+
+
+
+    def on_ocl_profile_select(self, event):
+        # Get selected item from Treeview
+        if not self.ocl_profiles_tree:
+            return
+        selected = self.ocl_profiles_tree.selection()
+        if not selected:
+            self.selected_ocl_profile_id = None
+            if self.ocl_edit_profile_button: self.ocl_edit_profile_button.configure(state="disabled")
+            if self.ocl_delete_profile_button: self.ocl_delete_profile_button.configure(state="disabled")
+            if self.ocl_export_profile_button: self.ocl_export_profile_button.configure(state="disabled")
+            return
+        try:
+            row_values = self.ocl_profiles_tree.item(selected[0], 'values')
+            self.selected_ocl_profile_id = int(row_values[0])
+            self.update_status_bar(f"Selected profile ID: {self.selected_ocl_profile_id}")
+            profile_obj = ocl_api.get_profile_obj_by_id(self.selected_ocl_profile_id)
+            if profile_obj:
+                details_str = profile_obj.to_formatted_string()
                 if self.ocl_profile_details_text:
-                    self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
-                    self.ocl_profile_details_text.delete("0.0", tk.END)
-                    self.ocl_profile_details_text.insert("0.0", "Select a valid profile to view details.")
-                    self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
+                    self.ocl_profile_details_text.configure(state="normal")
+                    self.ocl_profile_details_text.delete("1.0", "end")
+                    self.ocl_profile_details_text.insert("1.0", details_str)
+                    self.ocl_profile_details_text.configure(state="disabled")
+                if self.ocl_edit_profile_button: self.ocl_edit_profile_button.configure(state="normal")
+                if self.ocl_delete_profile_button: self.ocl_delete_profile_button.configure(state="normal")
+                if self.ocl_export_profile_button: self.ocl_export_profile_button.configure(state="normal")
+            else:
+                self.update_status_bar(f"Could not retrieve details for profile ID {self.selected_ocl_profile_id}", is_error=True)
+        except (ValueError, IndexError) as e:
+            self.selected_ocl_profile_id = None
+            logging.error(f"Error selecting profile: {e}", exc_info=True)
+            self.update_status_bar("Error selecting profile.", is_error=True)
+            if self.ocl_edit_profile_button: self.ocl_edit_profile_button.configure(state="disabled")
+            if self.ocl_delete_profile_button: self.ocl_delete_profile_button.configure(state="disabled")
+            if self.ocl_export_profile_button: self.ocl_export_profile_button.configure(state="disabled")
+
+    def _profile_editor_callback(self, updated_profile_obj):
+        """Callback function for the profile editor to save/update the profile."""
+        try:
+            ocl_api.save_or_update_profile(updated_profile_obj)
+            self.update_status_bar(f"Profile '{updated_profile_obj.name}' saved successfully.", clear_after_ms=5000)
+            self.refresh_ocl_profiles_list()
+        except Exception as e:
+            logging.error(f"Failed to save profile via callback: {e}", exc_info=True)
+            show_custom_messagebox(self, "Save Error", f"An error occurred while saving the profile:\n{e}", "error")
+
+    def create_new_bios_profile(self):
+        # Open the HTML BIOS profile editor in the user's default web browser
+        import_path = os.path.join(os.path.dirname(__file__), "ocl_module_src", "Bios_Settings_Manager.html")
+        if not os.path.exists(import_path):
+            show_custom_messagebox(self, "HTML Tool Not Found", f"Could not find Bios_Settings_Manager.html at {import_path}", "error")
+            return
+
+        import webbrowser
+        webbrowser.open(f"file://{import_path}")
+
+        def import_profile_callback():
+            dialog = CTkFileDialog(title="Select Profile JSON File")
+            file_path = dialog.get()
+            if not file_path:
+                return
+            try:
+                profile_to_import = load_from_json_file(file_path)
+                if profile_to_import is None:
+                    show_custom_messagebox(self, "Import Error", f"Could not load a valid profile from the selected file.", "error")
+                    return
+                # Add the profile to the list (via callback)
+                self._profile_editor_callback(profile_to_import)
+            except Exception as e:
+                show_custom_messagebox(self, "Import Error", f"Failed to import profile: {e}", "error")
+
+        # Prompt user to import after browser opens
+        import_prompt = customtkinter.CTkToplevel(self)
+        import_prompt.title("Import BIOS Profile")
+        import_prompt.geometry("400x180")
+        label = customtkinter.CTkLabel(import_prompt, text="After saving your profile in the HTML tool, click below to import the .json file.", wraplength=380)
+        label.pack(padx=20, pady=(30,10))
+        import_button = customtkinter.CTkButton(import_prompt, text="Import Saved Profile (.json)", command=lambda: [import_profile_callback(), import_prompt.destroy()])
+        import_button.pack(pady=20)
+
+    def import_bios_profile(self):
+        # Corrected CTkFileDialog call
+        dialog = CTkFileDialog(title="Select Profile JSON File")
+        # The dialog is modal, so execution should pause here until it's closed.
+        # The selected path is retrieved from the .get() method.
+        file_path = dialog.get()
+
+        if not file_path:
+            return
+        try:
+            profile_to_import = load_from_json_file(file_path)
+            if profile_to_import is None:
+                show_custom_messagebox(self, "Import Error", f"Could not load a valid profile from the selected file.", "error")
+                return
+            # Open editor to allow user to review/modify before saving to DB
+            editor = OclProfileEditor(self, profile=profile_to_import, callback=self._profile_editor_callback)
+            editor.grab_set()
+        except Exception as e:
+            logging.error(f"Failed to import profile from {file_path}: {e}", exc_info=True)
+            show_custom_messagebox(self, "Import Error", f"Failed to import profile: {e}", "error")
+
+    def export_selected_profile(self):
+        """Exports the selected profile to a JSON file."""
+        if self.selected_ocl_profile_id is None:
+            show_custom_messagebox(self, "No Profile Selected", "Please select a profile to export.", "warning")
+            return
+
+        try:
+            profile_to_export = ocl_api.get_profile_obj_by_id(self.selected_ocl_profile_id)
+            if not profile_to_export:
+                show_custom_messagebox(self, "Error", f"Could not load profile ID {self.selected_ocl_profile_id} for export.", "error")
                 return
 
-            self.selected_ocl_profile_id = int(profile_id_val_str)
-            logging.info(f"OCL profile selected. ID: {self.selected_ocl_profile_id}")
-            details = ocl_api.get_profile_details(self.selected_ocl_profile_id)
+            # Ask user for save location using the custom dialog
+            dialog = CTkFileDialog(title="Save Profile As...", save=True, save_extension=".json")
+            save_path = dialog.get() # This uses the new get() method
 
-            if self.ocl_profile_details_text:
-                self.ocl_profile_details_text.configure(state=customtkinter.NORMAL)
-                self.ocl_profile_details_text.delete("0.0", tk.END)
-                if details:
-                    hierarchical_settings = Profile.from_flat_list(details.get("settings", []))
+            if not save_path:
+                return # User cancelled
 
-                    display_text = f"Profile: {details.get('name', 'N/A')} (ID: {details.get('id')})\\n"
-                    display_text += f"Description: {details.get('description', 'N/A')}\\n\\n"
+            # Ensure the file has the correct extension
+            if not save_path.lower().endswith('.json'):
+                save_path += '.json'
 
-                    display_text += "Settings:\\n"
-                    if hierarchical_settings:
-                        for category, cat_settings_list in hierarchical_settings.items():
-                            display_text += f"  Category: {category}\\n"
-                            if cat_settings_list:
-                                for setting_entry in cat_settings_list: # Renamed to setting_entry
-                                    if isinstance(setting_entry, dict):
-                                        setting_name = setting_entry.get('setting_name', 'N/A')
-                                        setting_value = setting_entry.get('setting_value', 'N/A')
-                                        value_type = setting_entry.get('value_type', 'str')
-                                        display_text += f"    - {setting_name}: {setting_value} (Type: {value_type})\\n"
-                                    elif isinstance(setting_entry, str):
-                                        display_text += f"    - {setting_entry}\\n"
-                                    else: # Attempt to treat as an object (e.g., BIOSSetting instance)
-                                        try:
-                                            setting_name = getattr(setting_entry, 'setting_name', 'N/A')
-                                            setting_value = getattr(setting_entry, 'setting_value', 'N/A')
-                                            value_type = getattr(setting_entry, 'value_type', 'str')
-                                            display_text += f"    - {setting_name}: {setting_value} (Type: {value_type})\\n"
-                                        except AttributeError:
-                                            display_text += f"    - Unknown setting format: {str(setting_entry)}\\\\n"
-                            else:
-                                display_text += "    (No settings in this category)\\\\n"
-                    else:
-                        display_text += "  (No settings defined for this profile)\\\\n"
+            # Serialize profile and save to file
+            profile_dict = profile_to_export.to_html_tool_dict()
+            with open(save_path, 'w', encoding='utf-8') as f:
+                json.dump(profile_dict, f, indent=4)
+            
+            self.update_status_bar(f"Profile exported to {os.path.basename(save_path)}", clear_after_ms=5000)
+            show_custom_messagebox(self, "Export Successful", f"Profile successfully exported to:\n{save_path}", "info")
 
-                    display_text += "\\\\nLogs:\\\\n"
-                    if details.get("logs"):
-                        for log_entry in details.get("logs", []): # Ensure 'log_entry' is used
-                            display_text += f"  - [{log_entry.get('timestamp', 'N/A')}]: {log_entry.get('log_text', 'N/A')}\\n"
-                    else:
-                        display_text += "  (No logs for this profile)\\n"
-
-                    self.ocl_profile_details_text.insert("0.0", display_text)
-                else:
-                    self.ocl_profile_details_text.insert("0.0", f"No details found for profile ID: {self.selected_ocl_profile_id}")
-                    self.selected_ocl_profile_id = None # Clear selection if details not found
-                self.ocl_profile_details_text.configure(state=customtkinter.DISABLED)
-        except ValueError:
-            logging.error(f"Error converting profile ID '{profile_id_val_str}' to int.", exc_info=True)
-            show_custom_messagebox(self, "OCL Error", f"Could not process profile ID: '{profile_id_val_str}'.", dialog_type="error")
-            self.selected_ocl_profile_id = None
-        except IndexError:
-            logging.error(f"Error accessing profile data at index {data_list_index}. Row content: {selected_row_values if selected_row_values else 'Unknown'}", exc_info=True)
-            show_custom_messagebox(self, "OCL Error", "Could not retrieve all data for the selected profile row.", dialog_type="error")
-            self.selected_ocl_profile_id = None
         except Exception as e:
-            logging.error(f"Unexpected error processing OCL profile selection: {e}", exc_info=True)
-            show_custom_messagebox(self, "OCL Error", f"An unexpected error occurred: {e}", dialog_type="error")
+            logging.error(f"Failed to export profile: {e}", exc_info=True)
+            show_custom_messagebox(self, "Export Error", f"An error occurred during export: {e}", "error")
+
+    def edit_selected_profile(self):
+        if self.selected_ocl_profile_id is None:
+            show_custom_messagebox(self, "No Profile Selected", "Please select a profile from the list to edit.", "warning")
+            return
+        try:
+            # Use the correct API function to get the Profile object
+            profile_to_edit = ocl_api.get_profile_obj_by_id(self.selected_ocl_profile_id)
+            if profile_to_edit:
+                editor = OclProfileEditor(self, profile=profile_to_edit, callback=self._profile_editor_callback)
+                editor.grab_set()
+            else:
+                show_custom_messagebox(self, "Error", f"Could not load profile ID {self.selected_ocl_profile_id} for editing.", "error")
+        except Exception as e:
+            logging.error(f"Error opening profile editor: {e}", exc_info=True)
+            show_custom_messagebox(self, "Editor Error", f"Could not open editor: {e}", "error")
+
+    def delete_selected_profile(self):
+        if self.selected_ocl_profile_id is None:
+            show_custom_messagebox(self, "No Profile Selected", "Please select a profile from the list to delete.", "warning")
+            return
+        
+        # Confirmation dialog
+        confirm = messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete profile ID {self.selected_ocl_profile_id}?", parent=self)
+        if not confirm:
+            return
+
+        try:
+            # Use the correct API function name
+            ocl_api.delete_profile(self.selected_ocl_profile_id)
+            self.update_status_bar(f"Profile ID {self.selected_ocl_profile_id} deleted.", clear_after_ms=5000)
             self.selected_ocl_profile_id = None
+            if self.ocl_profile_details_text:
+                self.ocl_profile_details_text.configure(state="normal")
+                self.ocl_profile_details_text.delete("1.0", "end")
+                self.ocl_profile_details_text.configure(state="disabled")
+            if self.ocl_edit_profile_button: self.ocl_edit_profile_button.configure(state="disabled")
+            if self.ocl_delete_profile_button: self.ocl_delete_profile_button.configure(state="disabled")
+            if self.ocl_export_profile_button: self.ocl_export_profile_button.configure(state="disabled")
+            self.refresh_ocl_profiles_list()
+        except Exception as e:
+            logging.error(f"Failed to delete profile: {e}", exc_info=True)
+            show_custom_messagebox(self, "Delete Error", f"Failed to delete profile: {e}", "error")
+
+    def refresh_ocl_profiles_list(self):
+        self.update_status_bar("Refreshing OCL Profiles...")
+        if not hasattr(self, 'ocl_profiles_tree') or not self.ocl_profiles_tree:
+            return
+        try:
+            # Clear existing rows
+            for row in self.ocl_profiles_tree.get_children():
+                self.ocl_profiles_tree.delete(row)
+            profiles = ocl_api.get_all_profiles() # This returns a list of dicts
+            if profiles:
+                for profile_dict in profiles:
+                    row = [
+                        profile_dict.get('id', 'N/A'),
+                        profile_dict.get('name', 'N/A'),
+                        profile_dict.get('last_modified_date', 'N/A')
+                    ]
+                    self.ocl_profiles_tree.insert("", "end", values=row)
+            self.update_status_bar(f"OCL Profiles refreshed. Found {len(profiles)} profiles.", clear_after_ms=4000)
+        except Exception as e:
+            logging.error(f"Failed to refresh OCL profiles: {e}", exc_info=True)
+            self.update_status_bar(f"Error refreshing OCL profiles: {e}", is_error=True)
+        # Debug output for troubleshooting
+        logging.info(f"[DevEnvAudit] Components: {type(self.devenv_components_results)} len={len(self.devenv_components_results) if self.devenv_components_results is not None else 'None'}")
+        logging.info(f"[DevEnvAudit] Env Vars: {type(self.devenv_env_vars_results)} len={len(self.devenv_env_vars_results) if self.devenv_env_vars_results is not None else 'None'}")
+        logging.info(f"[DevEnvAudit] Issues: {type(self.devenv_issues_results)} len={len(self.devenv_issues_results) if self.devenv_issues_results is not None else 'None'}")
 
     def save_combined_report(self):
+        """Saves the collected data to JSON and Markdown files."""
+        if self.scan_in_progress:
+            show_custom_messagebox(self, "Scan In Progress", "A scan is already in progress. Please wait for it to complete.", dialog_type="info")
+            return
         # Directly use the globally managed CTkFileDialog variable
         dialog = CTkFileDialog(
             title="Select Output Directory", open_folder=True
-        ) # Removed master
-        output_dir = dialog.path # Access .path directly
+        ) 
+        output_dir = dialog.get()
 
         if not output_dir: # Placeholder's get() returns None, real one returns None on cancel
             logging.info("Save report cancelled or file dialog not available.")
@@ -1807,3 +1519,15 @@ class SystemSageApp(customtkinter.CTk):
             show_custom_messagebox(
                 self, "Save Error", f"Failed to save reports: {e}", dialog_type="error"
             )
+
+    def quit_app(self):
+        """Closes the application window."""
+        self.destroy()
+
+if __name__ == "__main__":
+    # --- Logging Configuration ---
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    
+    # --- Main Application Entry Point ---
+    app = SystemSageApp()
+    app.mainloop()

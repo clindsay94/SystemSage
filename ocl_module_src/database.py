@@ -174,6 +174,20 @@ def delete_profile(profile_id: int) -> bool:
         return False
 
 
+def delete_settings_for_profile(profile_id: int) -> bool:
+    """Deletes all settings associated with a specific profile. Returns True on success."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM settings WHERE profile_id = ?", (profile_id,))
+            # No need to update last_modified here as this is part of a larger update operation
+            conn.commit()
+            return True
+    except sqlite3.Error as e:
+        print(f"Error deleting settings for profile {profile_id}: {e}")
+        return False
+
+
 # --- Settings Functions ---
 def add_setting(
     profile_id: int,
@@ -212,6 +226,41 @@ def get_settings_for_profile(profile_id: int) -> list[dict]:
     except sqlite3.Error as e:
         print(f"Error getting settings for profile {profile_id}: {e}")
         return []
+
+
+def set_settings_for_profile(profile_id: int, settings: list[dict]) -> bool:
+    """
+    Replaces all settings for a given profile with a new set of settings.
+    This is done within a single transaction.
+    Returns True on success, False on error.
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            # Delete old settings
+            cursor.execute("DELETE FROM settings WHERE profile_id = ?", (profile_id,))
+            # Insert new settings
+            if settings:
+                settings_to_insert = [
+                    (
+                        profile_id,
+                        s["category"],
+                        s["setting_name"],
+                        s["setting_value"],
+                        s["value_type"],
+                    )
+                    for s in settings
+                ]
+                cursor.executemany(
+                    "INSERT INTO settings (profile_id, category, setting_name, setting_value, value_type) VALUES (?, ?, ?, ?, ?)",
+                    settings_to_insert,
+                )
+            _update_profile_last_modified(conn, profile_id)
+            conn.commit()
+            return True
+    except sqlite3.Error as e:
+        print(f"Error setting settings for profile {profile_id}: {e}")
+        return False
 
 
 def _get_profile_id_for_setting(conn, setting_id: int) -> int | None:

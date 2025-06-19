@@ -1,0 +1,28 @@
+{
+  "name": "systemsage",
+  "version": "1.0.0",
+  "description": "**Your intelligent PC software inventory, developer environment, and overclocking logbook analysis tool.**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clindsay94/SystemSage.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/clindsay94/SystemSage/issues"
+  },
+  "homepage": "https://github.com/clindsay94/SystemSage#readme",
+  "dependencies": {
+    "@material/web": "^2.3.0"
+  }
+}
