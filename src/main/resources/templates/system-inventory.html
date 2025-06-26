@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>System Inventory</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <h1>System Inventory</h1>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Display Name</th>
+            <th>Version</th>
+            <th>Publisher</th>
+            <th>Install Location</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="software : ${softwareList}">
+            <td th:text="${software.displayName}"></td>
+            <td th:text="${software.displayVersion}"></td>
+            <td th:text="${software.publisher}"></td>
+            <td th:text="${software.installLocation}"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

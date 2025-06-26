@@ -1,12 +1,22 @@
-# Ignore system inventory files
-.json
-.md
-# Ignore output files from system sage  
-/output_data/devenv_audit/devenv_audit_*.json
-/output_data/system_inventory/system_inventory_*.json
-/output/selected_dummy_folder_by_ctkfiledialog/system_sage_combined_report.json
-/output/selected_dummy_folder_by_ctkfiledialog/system_sage_combined_report.md
-/output/system_sage_inventory.json
-/output/system_sage_inventory.md
-#Ignore pycache files
-.pyc
+# IDE specific files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Build output
+target/
+
+# Maven specific files
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+
+# Log files
+*.log
+
+# System files
+.DS_Store

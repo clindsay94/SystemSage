@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Overclocker's Logbook</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <h1>Overclocker's Logbook</h1>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Last Modified</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="profile : ${profiles}">
+            <td th:text="${profile.id}"></td>
+            <td th:text="${profile.name}"></td>
+            <td th:text="${profile.description}"></td>
+            <td th:text="${profile.lastModifiedDate}"></td>
+            <td>
+                <a th:href="@{/bios-profiles/edit/{id}(id=${profile.id})}" class="btn btn-primary">Edit</a>
+                <a th:href="@{/bios-profiles/delete/{id}(id=${profile.id})}" class="btn btn-danger">Delete</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <a href="/bios-profiles/new" class="btn btn-success">New Profile</a>
+</div>
+</body>
+</html>
