@@ -582,7 +582,9 @@ if __name__ == "__main__":
                 )
             ],
         ),
-        EnvironmentVariableInfo(name="API_KEY_SECRET", value="supersecretvalue"),
+        EnvironmentVariableInfo(
+            name="API_KEY_SECRET", value=os.environ.get("API_KEY_SECRET", "REDACTED")
+        ),
     ]
     issues = [
         ScanIssue("Global issue example", "Critical", category="System"),
