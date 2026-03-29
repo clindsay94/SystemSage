@@ -75,6 +75,7 @@ class TestLoadJsonConfig(unittest.TestCase):
         default_data = ["default_io_error"]
         result = load_json_config("dummy.json", default_data)
         self.assertEqual(result, default_data)
+        mock_path_exists.assert_called_once_with("dummy.json")
         mock_file_open.assert_called_with("dummy.json", "r", encoding="utf-8")
 
     @patch("os.path.exists", return_value=False)
