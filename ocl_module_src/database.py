@@ -232,6 +232,35 @@ def get_settings_for_profile(profile_id: int) -> list[dict]:
         return []
 
 
+def add_settings(profile_id: int, settings: list[dict]) -> bool:
+    """Adds multiple settings in a single transaction. Updates profile's last_modified_date."""
+    if not settings:
+        return True
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            settings_to_insert = [
+                (
+                    profile_id,
+                    s["category"],
+                    s["setting_name"],
+                    s["setting_value"],
+                    s["value_type"],
+                )
+                for s in settings
+            ]
+            cursor.executemany(
+                "INSERT INTO settings (profile_id, category, setting_name, setting_value, value_type) VALUES (?, ?, ?, ?, ?)",
+                settings_to_insert,
+            )
+            _update_profile_last_modified(conn, profile_id)
+            conn.commit()
+            return True
+    except sqlite3.Error as e:
+        print(f"Error adding settings for profile {profile_id}: {e}")
+        return False
+
+
 def set_settings_for_profile(profile_id: int, settings: list[dict]) -> bool:
     """
     Replaces all settings for a given profile with a new set of settings.
@@ -359,6 +388,27 @@ def get_logs_for_profile(profile_id: int) -> list[dict]:
     except sqlite3.Error:
         logger.error(f"Error getting logs for profile {profile_id}", exc_info=True)
         return []
+
+
+def add_log_entries(profile_id: int, log_texts: list[str]) -> bool:
+    """Adds multiple log entries in a single transaction. Updates profile's last_modified_date."""
+    if not log_texts:
+        return True
+    now_iso = datetime.now().isoformat()
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            logs_to_insert = [(profile_id, now_iso, text) for text in log_texts]
+            cursor.executemany(
+                "INSERT INTO logs (profile_id, timestamp, log_text) VALUES (?, ?, ?)",
+                logs_to_insert,
+            )
+            _update_profile_last_modified(conn, profile_id)
+            conn.commit()
+            return True
+    except sqlite3.Error as e:
+        print(f"Error adding log entries for profile {profile_id}: {e}")
+        return False
 
 
 # Initialize the database (create tables if they don't exist)
