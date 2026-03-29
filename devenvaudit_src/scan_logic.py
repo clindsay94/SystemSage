@@ -293,13 +293,15 @@ class EnvironmentScanner:
         self, exe_path: str, version_args: List[str], version_regex_str: str
     ) -> Optional[str]:
         # FIX: Added a strict check to ensure we only try to execute valid program files.
-        if self.system == "Windows" and not exe_path.lower().endswith(
-            (".exe", ".bat", ".cmd", ".ps1")
-        ):
+        if not exe_path or not os.path.exists(exe_path) or not os.path.isfile(exe_path):
             return None
 
-        if not exe_path or not os.path.exists(exe_path):
-            return None
+        if self.system == "Windows":
+            if not exe_path.lower().endswith((".exe", ".bat", ".cmd", ".com", ".ps1")):
+                return None
+        else:
+            if not os.access(exe_path, os.X_OK):
+                return None
 
         full_command = [exe_path] + version_args
         stdout, stderr, return_code = self._run_command(full_command)
