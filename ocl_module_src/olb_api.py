@@ -4,9 +4,12 @@ This API provides functions to interact with the OLB database,
 encapsulating data access logic and offering higher-level operations.
 """
 
+import logging
 from typing import List, Dict, Optional, Any
 from . import database
 from .bios_profile import Profile
+
+logger = logging.getLogger(__name__)
 
 # --- Profile API Functions ---
 
@@ -22,8 +25,8 @@ def get_all_profiles() -> List[Dict[str, Any]]:
     """
     try:
         return database.list_all_profiles()
-    except Exception as e:
-        print(f"API Error in get_all_profiles: {e}")
+    except Exception:
+        logger.error("API Error in get_all_profiles", exc_info=True)
         return []
 
 
@@ -55,8 +58,8 @@ def get_profile_details(profile_id: int) -> Optional[Dict[str, Any]]:
         detailed_profile["logs"] = logs_data
 
         return detailed_profile
-    except Exception as e:
-        print(f"API Error in get_profile_details for profile_id {profile_id}: {e}")
+    except Exception:
+        logger.error(f"API Error in get_profile_details for profile_id {profile_id}", exc_info=True)
         return None
 
 
@@ -81,8 +84,8 @@ def get_profile_obj_by_id(profile_id: int) -> Optional[Profile]:
         profile_obj.description = profile_data['description']
         
         return profile_obj
-    except Exception as e:
-        print(f"API Error in get_profile_obj_by_id for profile_id {profile_id}: {e}")
+    except Exception:
+        logger.error(f"API Error in get_profile_obj_by_id for profile_id {profile_id}", exc_info=True)
         return None
 
 
@@ -115,8 +118,8 @@ def save_or_update_profile(profile_obj: Profile) -> Optional[int]:
                     profile_obj.id, settings_flat_list
                 )
             return profile_obj.id if success else None
-    except Exception as e:
-        print(f"API Error in save_or_update_profile: {e}")
+    except Exception:
+        logger.error("API Error in save_or_update_profile", exc_info=True)
         return None
 
 
@@ -142,36 +145,22 @@ def create_new_profile(
     try:
         profile_id = database.create_profile(name, description)
         if profile_id is None:
-            print(f"API: Failed to create profile entry for '{name}'.")
+            logger.error(f"API: Failed to create profile entry for '{name}'.")
             return None
 
         if initial_settings:
-            for setting in initial_settings:
-                db_setting_id = database.add_setting(
-                    profile_id,
-                    setting["category"],
-                    setting["setting_name"],
-                    setting["setting_value"],
-                    setting["value_type"],
-                )
-                if db_setting_id is None:
-                    print(
-                        f"API: Failed to add initial setting '{setting['setting_name']}' for profile {profile_id}."
-                    )
-                    # Continue adding other settings/logs, or decide on stricter error handling
+            success = database.add_settings(profile_id, initial_settings)
+            if not success:
+                print(f"API: Failed to add initial settings for profile {profile_id}.")
 
         if initial_logs:
-            for log_text in initial_logs:
-                db_log_id = database.add_log_entry(profile_id, log_text)
-                if db_log_id is None:
-                    print(
-                        f"API: Failed to add initial log for profile {profile_id}: '{log_text[:50]}...'."
-                    )
-                    # Continue adding other logs, or decide on stricter error handling
+            success = database.add_log_entries(profile_id, initial_logs)
+            if not success:
+                print(f"API: Failed to add initial logs for profile {profile_id}.")
 
         return profile_id
-    except Exception as e:
-        print(f"API Error in create_new_profile for '{name}': {e}")
+    except Exception:
+        logger.error(f"API Error in create_new_profile for '{name}'", exc_info=True)
         return None
 
 
@@ -204,7 +193,7 @@ def update_existing_profile(
     attempted_any_update = False
     try:
         if database.get_profile(profile_id) is None:
-            print(f"API: Profile with ID {profile_id} not found for update.")
+            logger.error(f"API: Profile with ID {profile_id} not found for update.")
             return False
 
         if name is not None or description is not None:
@@ -215,14 +204,7 @@ def update_existing_profile(
 
         if settings_to_add:
             attempted_any_update = True
-            for setting in settings_to_add:
-                database.add_setting(
-                    profile_id,
-                    setting["category"],
-                    setting["setting_name"],
-                    setting["setting_value"],
-                    setting["value_type"],
-                )
+            database.add_settings(profile_id, settings_to_add)
 
         if settings_to_update:
             attempted_any_update = True
@@ -238,12 +220,11 @@ def update_existing_profile(
 
         if logs_to_add:
             attempted_any_update = True
-            for log_text in logs_to_add:
-                database.add_log_entry(profile_id, log_text)
+            database.add_log_entries(profile_id, logs_to_add)
 
         return attempted_any_update
-    except Exception as e:
-        print(f"API Error in update_existing_profile for profile_id {profile_id}: {e}")
+    except Exception:
+        logger.error(f"API Error in update_existing_profile for profile_id {profile_id}", exc_info=True)
         # If an error occurs during one of the operations, we might still have attempted updates.
         # Depending on desired behavior, could return False here or rely on attempted_any_update.
         return (
@@ -258,8 +239,8 @@ def delete_profile(profile_id: int) -> bool:
     """
     try:
         return database.delete_profile(profile_id)
-    except Exception as e:
-        print(f"API Error in delete_profile for profile_id {profile_id}: {e}")
+    except Exception:
+        logger.error(f"API Error in delete_profile for profile_id {profile_id}", exc_info=True)
         return False
 
 
@@ -276,12 +257,12 @@ def add_log_to_profile(profile_id: int, log_text: str) -> Optional[int]:
     """
     try:
         if database.get_profile(profile_id) is None:  # Check if profile exists
-            print(f"API: Profile with ID {profile_id} not found for adding log.")
+            logger.error(f"API: Profile with ID {profile_id} not found for adding log.")
             return None
         log_id = database.add_log_entry(profile_id, log_text)
         return log_id
-    except Exception as e:
-        print(f"API Error in add_log_to_profile for profile_id {profile_id}: {e}")
+    except Exception:
+        logger.error(f"API Error in add_log_to_profile for profile_id {profile_id}", exc_info=True)
         return None
 
 
