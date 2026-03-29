@@ -146,28 +146,14 @@ def create_new_profile(
             return None
 
         if initial_settings:
-            for setting in initial_settings:
-                db_setting_id = database.add_setting(
-                    profile_id,
-                    setting["category"],
-                    setting["setting_name"],
-                    setting["setting_value"],
-                    setting["value_type"],
-                )
-                if db_setting_id is None:
-                    print(
-                        f"API: Failed to add initial setting '{setting['setting_name']}' for profile {profile_id}."
-                    )
-                    # Continue adding other settings/logs, or decide on stricter error handling
+            success = database.add_settings(profile_id, initial_settings)
+            if not success:
+                print(f"API: Failed to add initial settings for profile {profile_id}.")
 
         if initial_logs:
-            for log_text in initial_logs:
-                db_log_id = database.add_log_entry(profile_id, log_text)
-                if db_log_id is None:
-                    print(
-                        f"API: Failed to add initial log for profile {profile_id}: '{log_text[:50]}...'."
-                    )
-                    # Continue adding other logs, or decide on stricter error handling
+            success = database.add_log_entries(profile_id, initial_logs)
+            if not success:
+                print(f"API: Failed to add initial logs for profile {profile_id}.")
 
         return profile_id
     except Exception as e:
@@ -215,14 +201,7 @@ def update_existing_profile(
 
         if settings_to_add:
             attempted_any_update = True
-            for setting in settings_to_add:
-                database.add_setting(
-                    profile_id,
-                    setting["category"],
-                    setting["setting_name"],
-                    setting["setting_value"],
-                    setting["value_type"],
-                )
+            database.add_settings(profile_id, settings_to_add)
 
         if settings_to_update:
             attempted_any_update = True
@@ -238,8 +217,7 @@ def update_existing_profile(
 
         if logs_to_add:
             attempted_any_update = True
-            for log_text in logs_to_add:
-                database.add_log_entry(profile_id, log_text)
+            database.add_log_entries(profile_id, logs_to_add)
 
         return attempted_any_update
     except Exception as e:
