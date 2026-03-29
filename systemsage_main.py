@@ -1101,8 +1101,9 @@ class SystemSageApp(customtkinter.CTk):
             return
         inv_cols = ["Name", "Version", "Publisher", "Path", "Size", "Status", "Remarks", "SourceHive", "RegKey"]
         # Clear current rows
-        for row in self.inventory_tree.get_children():
-            self.inventory_tree.delete(row)
+        inv_children = self.inventory_tree.get_children()
+        if inv_children:
+            self.inventory_tree.delete(*inv_children)
 
         # Filtering
         filter_text = self.inventory_filter_var.get().lower() if hasattr(self, 'inventory_filter_var') else ""
@@ -1171,8 +1172,9 @@ class SystemSageApp(customtkinter.CTk):
         # Components
         if hasattr(self, 'devenv_components_tree') and self.devenv_components_tree:
             comp_cols = ["ID", "Name", "Category", "Version", "Path", "Executable Path", "Source", "DB Name"]
-            for row in self.devenv_components_tree.get_children():
-                self.devenv_components_tree.delete(row)
+            comp_children = self.devenv_components_tree.get_children()
+            if comp_children:
+                self.devenv_components_tree.delete(*comp_children)
             if self.devenv_components_results:
                 for comp in self.devenv_components_results:
                     row = [
@@ -1185,8 +1187,9 @@ class SystemSageApp(customtkinter.CTk):
         # Env Vars
         if hasattr(self, 'devenv_env_vars_tree') and self.devenv_env_vars_tree:
             env_cols = ["Name", "Value", "Scope"]
-            for row in self.devenv_env_vars_tree.get_children():
-                self.devenv_env_vars_tree.delete(row)
+            env_children = self.devenv_env_vars_tree.get_children()
+            if env_children:
+                self.devenv_env_vars_tree.delete(*env_children)
             if self.devenv_env_vars_results:
                 for var in self.devenv_env_vars_results:
                     row = [var.name, var.value, var.scope]
@@ -1195,8 +1198,9 @@ class SystemSageApp(customtkinter.CTk):
         # Issues
         if hasattr(self, 'devenv_issues_tree') and self.devenv_issues_tree:
             issue_cols = ["Severity", "Description", "Category", "Component ID", "Related Path"]
-            for row in self.devenv_issues_tree.get_children():
-                self.devenv_issues_tree.delete(row)
+            issue_children = self.devenv_issues_tree.get_children()
+            if issue_children:
+                self.devenv_issues_tree.delete(*issue_children)
             if self.devenv_issues_results:
                 for issue in self.devenv_issues_results:
                     row = [
@@ -1429,8 +1433,9 @@ class SystemSageApp(customtkinter.CTk):
             return
         try:
             # Clear existing rows
-            for row in self.ocl_profiles_tree.get_children():
-                self.ocl_profiles_tree.delete(row)
+            ocl_children = self.ocl_profiles_tree.get_children()
+            if ocl_children:
+                self.ocl_profiles_tree.delete(*ocl_children)
             profiles = ocl_api.get_all_profiles() # This returns a list of dicts
             if profiles:
                 for profile_dict in profiles:
