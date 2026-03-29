@@ -1,9 +1,12 @@
 import sqlite3
 from datetime import datetime
 import os
+import logging
 
 # Database file path (alongside database.py)
 DB_FILE = os.path.join(os.path.dirname(__file__), "system_sage_olb.db")
+
+logger = logging.getLogger(__name__)
 
 
 def get_db_connection():
@@ -58,9 +61,9 @@ def init_db():
                 )
             """)
             conn.commit()
-            print("Database initialized successfully.")
-    except sqlite3.Error as e:
-        print(f"Database initialization error: {e}")
+            logger.info("Database initialized successfully.")
+    except sqlite3.Error:
+        logger.error("Database initialization error", exc_info=True)
         raise
 
 
@@ -75,9 +78,10 @@ def _update_profile_last_modified(conn, profile_id: int):
             (now_iso, profile_id),
         )
         # conn.commit() is handled by the calling function's context manager
-    except sqlite3.Error as e:
-        print(
-            f"Error updating profile last_modified_date for profile_id {profile_id}: {e}"
+    except sqlite3.Error:
+        logger.error(
+            f"Error updating profile last_modified_date for profile_id {profile_id}",
+            exc_info=True
         )
         # Potentially re-raise or handle as appropriate
 
@@ -94,8 +98,8 @@ def create_profile(name: str, description: str | None = None) -> int | None:
             )
             conn.commit()
             return cursor.lastrowid
-    except sqlite3.Error as e:
-        print(f"Error creating profile: {e}")
+    except sqlite3.Error:
+        logger.error("Error creating profile", exc_info=True)
         return None
 
 
@@ -107,8 +111,8 @@ def get_profile(profile_id: int) -> dict | None:
             cursor.execute("SELECT * FROM profiles WHERE id = ?", (profile_id,))
             row = cursor.fetchone()
             return dict(row) if row else None
-    except sqlite3.Error as e:
-        print(f"Error getting profile {profile_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error getting profile {profile_id}", exc_info=True)
         return None
 
 
@@ -122,8 +126,8 @@ def list_all_profiles() -> list[dict]:
             )
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
-    except sqlite3.Error as e:
-        print(f"Error listing profiles: {e}")
+    except sqlite3.Error:
+        logger.error("Error listing profiles", exc_info=True)
         return []
 
 
@@ -156,8 +160,8 @@ def update_profile(
             cursor.execute(sql, tuple(params))
             conn.commit()
             return cursor.rowcount > 0
-    except sqlite3.Error as e:
-        print(f"Error updating profile {profile_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error updating profile {profile_id}", exc_info=True)
         return False
 
 
@@ -169,8 +173,8 @@ def delete_profile(profile_id: int) -> bool:
             cursor.execute("DELETE FROM profiles WHERE id = ?", (profile_id,))
             conn.commit()
             return cursor.rowcount > 0
-    except sqlite3.Error as e:
-        print(f"Error deleting profile {profile_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error deleting profile {profile_id}", exc_info=True)
         return False
 
 
@@ -183,8 +187,8 @@ def delete_settings_for_profile(profile_id: int) -> bool:
             # No need to update last_modified here as this is part of a larger update operation
             conn.commit()
             return True
-    except sqlite3.Error as e:
-        print(f"Error deleting settings for profile {profile_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error deleting settings for profile {profile_id}", exc_info=True)
         return False
 
 
@@ -207,8 +211,8 @@ def add_setting(
             _update_profile_last_modified(conn, profile_id)
             conn.commit()
             return cursor.lastrowid
-    except sqlite3.Error as e:
-        print(f"Error adding setting for profile {profile_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error adding setting for profile {profile_id}", exc_info=True)
         return None
 
 
@@ -223,8 +227,8 @@ def get_settings_for_profile(profile_id: int) -> list[dict]:
             )
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
-    except sqlite3.Error as e:
-        print(f"Error getting settings for profile {profile_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error getting settings for profile {profile_id}", exc_info=True)
         return []
 
 
@@ -287,8 +291,8 @@ def set_settings_for_profile(profile_id: int, settings: list[dict]) -> bool:
             _update_profile_last_modified(conn, profile_id)
             conn.commit()
             return True
-    except sqlite3.Error as e:
-        print(f"Error setting settings for profile {profile_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error setting settings for profile {profile_id}", exc_info=True)
         return False
 
 
@@ -299,8 +303,8 @@ def _get_profile_id_for_setting(conn, setting_id: int) -> int | None:
         cursor.execute("SELECT profile_id FROM settings WHERE id = ?", (setting_id,))
         row = cursor.fetchone()
         return row["profile_id"] if row else None
-    except sqlite3.Error as e:
-        print(f"Error getting profile_id for setting {setting_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error getting profile_id for setting {setting_id}", exc_info=True)
         return None
 
 
@@ -310,7 +314,7 @@ def update_setting_value(setting_id: int, setting_value: str) -> bool:
         with get_db_connection() as conn:
             profile_id = _get_profile_id_for_setting(conn, setting_id)
             if not profile_id:
-                print(
+                logger.error(
                     f"Setting {setting_id} not found or profile_id could not be retrieved."
                 )
                 return False
@@ -323,8 +327,8 @@ def update_setting_value(setting_id: int, setting_value: str) -> bool:
             _update_profile_last_modified(conn, profile_id)
             conn.commit()
             return cursor.rowcount > 0
-    except sqlite3.Error as e:
-        print(f"Error updating setting {setting_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error updating setting {setting_id}", exc_info=True)
         return False
 
 
@@ -334,7 +338,7 @@ def delete_setting(setting_id: int) -> bool:
         with get_db_connection() as conn:
             profile_id = _get_profile_id_for_setting(conn, setting_id)
             if not profile_id:
-                print(
+                logger.error(
                     f"Setting {setting_id} not found or profile_id could not be retrieved for last_modified update."
                 )
                 # Still attempt delete if profile_id not found, as the setting itself might exist
@@ -346,8 +350,8 @@ def delete_setting(setting_id: int) -> bool:
                 _update_profile_last_modified(conn, profile_id)
             conn.commit()
             return cursor.rowcount > 0
-    except sqlite3.Error as e:
-        print(f"Error deleting setting {setting_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error deleting setting {setting_id}", exc_info=True)
         return False
 
 
@@ -365,8 +369,8 @@ def add_log_entry(profile_id: int, log_text: str) -> int | None:
             _update_profile_last_modified(conn, profile_id)
             conn.commit()
             return cursor.lastrowid
-    except sqlite3.Error as e:
-        print(f"Error adding log entry for profile {profile_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error adding log entry for profile {profile_id}", exc_info=True)
         return None
 
 
@@ -381,8 +385,8 @@ def get_logs_for_profile(profile_id: int) -> list[dict]:
             )
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
-    except sqlite3.Error as e:
-        print(f"Error getting logs for profile {profile_id}: {e}")
+    except sqlite3.Error:
+        logger.error(f"Error getting logs for profile {profile_id}", exc_info=True)
         return []
 
 
@@ -413,32 +417,6 @@ if __name__ == "__main__":
     # For testing purposes, you can run this script directly
     print(f"Database file will be created at: {DB_FILE}")
     init_db()
-
-    # Example Usage (optional, for direct script run)
-    # profile_id = create_profile("Test BIOS Settings", "ASRock X670E Taichi Carrara")
-    # if profile_id:
-    #     print(f"Created profile with ID: {profile_id}")
-    #     add_setting(profile_id, "CPU", "PBO", "Enhanced Mode 4", "str")
-    #     add_setting(profile_id, "Memory", "EXPO", "6000CL30", "str")
-    #     add_log_entry(profile_id, "Initial setup, testing stability.")
-    #     print(f"Settings for profile {profile_id}: {get_settings_for_profile(profile_id)}")
-    #     print(f"Logs for profile {profile_id}: {get_logs_for_profile(profile_id)}")
-    #     print(f"All profiles: {list_all_profiles()}")
-    #     update_profile(profile_id, description="ASRock X670E Taichi - Updated description")
-    #     print(f"Profile {profile_id} after update: {get_profile(profile_id)}")
-
-    # settings_list = get_settings_for_profile(profile_id)
-    # if settings_list:
-    #     setting_to_update_id = settings_list[0]['id']
-    #     update_setting_value(setting_to_update_id, "Disabled")
-    #     print(f"Settings for profile {profile_id} after update: {get_settings_for_profile(profile_id)}")
-
-    #     setting_to_delete_id = settings_list[1]['id']
-    #     delete_setting(setting_to_delete_id)
-    #     print(f"Settings for profile {profile_id} after delete: {get_settings_for_profile(profile_id)}")
-
-    # delete_profile(profile_id)
-    # print(f"All profiles after delete: {list_all_profiles()}")
 
 else:
     # Ensure DB is initialized when module is imported elsewhere

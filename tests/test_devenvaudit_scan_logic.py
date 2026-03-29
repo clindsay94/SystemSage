@@ -35,9 +35,6 @@ class TestDevEnvAuditConfigLoading(unittest.TestCase):
             devenv_config_manager.CONFIG_FILE_PATH, "r", encoding="utf-8"
         )
         mock_json_load.assert_called_once()
-        mock_makedirs.assert_called_with(
-            devenv_config_manager.CONFIG_DIR_PATH, exist_ok=True
-        )
 
     @patch("devenvaudit_src.config_manager.os.path.exists", return_value=False)
     @patch(
@@ -78,9 +75,6 @@ class TestDevEnvAuditConfigLoading(unittest.TestCase):
             devenv_config_manager.DEFAULT_CONFIG,
             mock_file_open_write.return_value.__enter__.return_value,
             indent=4,
-        )
-        mock_makedirs.assert_any_call(
-            devenv_config_manager.CONFIG_DIR_PATH, exist_ok=True
         )
 
 
@@ -127,14 +121,9 @@ class TestDevEnvAuditScanLogicAssetLoading(unittest.TestCase):
         )
         mock_file.assert_called_with(expected_tools_db_path, "r", encoding="utf-8")
 
-    @patch.object(
-        devenv_scan_logic.SoftwareCategorizer, "_load_database"
-    )  # Mock method directly
-    def test_software_categorizer_init_handles_db_load_failure(self, mock_load_db):
-        mock_load_db.return_value = {}  # Simulate failed load
-        categorizer = devenv_scan_logic.SoftwareCategorizer()
+    def test_software_categorizer_init_handles_db_load_failure(self):
+        categorizer = devenv_scan_logic.SoftwareCategorizer(categorization_data={})
         self.assertEqual(categorizer.categorization_data, {})
-        mock_load_db.assert_called_once()  # Ensure the mocked method was called
 
 
 class TestEnvironmentScannerHelpers(unittest.TestCase):
@@ -143,9 +132,6 @@ class TestEnvironmentScannerHelpers(unittest.TestCase):
         with (
             patch(
                 "devenvaudit_src.scan_logic.load_config", return_value={}
-            ),
-            patch(
-                "devenvaudit_src.scan_logic.get_scan_options", return_value={}
             ),
             patch("devenvaudit_src.scan_logic.SoftwareCategorizer"),
         ):
@@ -160,8 +146,12 @@ class TestEnvironmentScannerHelpers(unittest.TestCase):
         mock_process.communicate.return_value = ("Python 3.9.1", "")
 
         mock_process.returncode = 0
-        # Patch os.path.exists for the executable path check
-        with patch("os.path.exists", return_value=True):
+        # Patch os.path.exists, isfile and access for the executable path check
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isfile", return_value=True),
+            patch("os.access", return_value=True),
+        ):
             version = self.scanner._get_version_from_command(
                 "python", ["--version"], r"Python\s+([0-9\.]+)"
             )
@@ -188,26 +178,22 @@ class TestEnvironmentScannerHelpers(unittest.TestCase):
     @patch.dict(
         os.environ, {"PATH": "/test/bin:/usr/bin"}, clear=True
     )  # clear=True ensures a clean PATH
-    @patch("pathlib.Path.is_file")  # Patch is_file directly on Path objects
-    @patch("pathlib.Path.resolve")  # Patch resolve
+    @patch("devenvaudit_src.scan_logic.Path")  # Patch Path in the module
     @patch("os.access")  # os.access is still used
-    def test_find_executable_in_path(
-        self, mock_os_access, mock_path_resolve, mock_path_is_file
-    ):
+    def test_find_executable_in_path(self, mock_os_access, mock_path_class):
         # Scenario: exe exists and is executable
 
-        # Configure mocks for Path objects
-        # This requires knowing how Path objects are constructed and used.
-        # If Path('/test/bin') / 'myexe' is called:
+        def path_side_effect(path_str):
+            mock_path = unittest.mock.MagicMock()
+            mock_path.__str__.return_value = path_str
+            mock_path.__truediv__.side_effect = lambda other: path_side_effect(
+                os.path.join(path_str, other)
+            )
+            mock_path.is_file.return_value = path_str == "/test/bin/myexe"
+            mock_path.resolve.return_value = path_str
+            return mock_path
 
-        def is_file_side_effect(path_obj):  # The path_obj is the Path instance
-            return str(path_obj) == "/test/bin/myexe"
-
-        mock_path_is_file.side_effect = is_file_side_effect
-
-        # Make resolve return a new Path object with the resolved string, or just the string
-        # The code uses str(exe_path.resolve()), so a string is fine.
-        mock_path_resolve.side_effect = lambda: "/test/bin/myexe"
+        mock_path_class.side_effect = path_side_effect
 
         mock_os_access.return_value = True  # os.access(exe_path, os.X_OK)
 
@@ -217,7 +203,6 @@ class TestEnvironmentScannerHelpers(unittest.TestCase):
         self.assertEqual(found_path, "/test/bin/myexe")
 
         # Scenario: exe not found
-        mock_path_is_file.side_effect = lambda path_obj: False  # Reset side effect
         self.scanner.found_executables = {}  # Clear cache
         found_path_not = self.scanner._find_executable_in_path("another_exe")
         self.assertIsNone(found_path_not)

@@ -2,8 +2,11 @@
 This module defines the data structures for BIOS profiles.
 """
 import json
+import logging
 from dataclasses import dataclass, field, fields, is_dataclass
 from typing import Optional, List, Dict, Any, Type, TypeVar
+
+logger = logging.getLogger(__name__)
 
 # Helper function to create a list of a specific dataclass type
 def _create_list(factory, count):
@@ -670,6 +673,6 @@ def load_from_json_file(file_path: str) -> Optional['Profile']:
 
         return profile
 
-    except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
-        print(f"Error loading profile from {file_path}: {e}") # Replace with logging
+    except (json.JSONDecodeError, FileNotFoundError, KeyError):
+        logger.error(f"Error loading profile from {file_path}", exc_info=True)
         return None
