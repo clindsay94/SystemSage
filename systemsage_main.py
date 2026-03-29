@@ -31,7 +31,7 @@ from devenvaudit_src.report_generator import ReportGenerator
 # --- OCL Module Imports ---
 from ocl_module_src import olb_api as ocl_api
 # --- NEW: Import the new OCL Profile Editor and data structures ---
-from ocl_module_src.bios_profile import Profile, load_from_json_file
+from ocl_module_src.bios_profile import load_from_json_file
 from ocl_module_src.profile_editor_ui import OclProfileEditor
 
 # --- Custom Message Box Function (defined before CTkFileDialog placeholder that might use it) ---
