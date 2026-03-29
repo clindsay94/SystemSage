@@ -4,10 +4,13 @@
 # Description: Provides a comprehensive GUI for creating and editing detailed BIOS
 #              profiles, replacing the need for manual dialog-based entry.
 
+import logging
 import customtkinter as ctk
 from tkinter import ttk
 from tkinterweb import HtmlFrame
 from ocl_module_src.bios_profile import Profile
+
+logger = logging.getLogger(__name__)
 
 class OclProfileEditor(ctk.CTkToplevel):
     def __init__(self, master, profile: Profile, callback=None):
@@ -42,9 +45,9 @@ class OclProfileEditor(ctk.CTkToplevel):
         html_view.pack(expand=True, fill="both")
         try:
             html_view.load_html("<h2 style='color:green'>tkinterweb is working!<br>This is a minimal HTML test.</h2><p>If you see this, tkinterweb is functional. If not, tkinterweb is not working in your environment.</p>")
-            print("[DEBUG] Minimal HTML loaded in tkinterweb.")
-        except Exception as e:
-            print(f"[ERROR] tkinterweb load_html failed: {e}")
+            logger.debug("Minimal HTML loaded in tkinterweb.")
+        except Exception:
+            logger.error("tkinterweb load_html failed", exc_info=True)
 
         # No action buttons for now; only HTML reference is shown.
 
