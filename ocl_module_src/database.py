@@ -364,32 +364,6 @@ if __name__ == "__main__":
     print(f"Database file will be created at: {DB_FILE}")
     init_db()
 
-    # Example Usage (optional, for direct script run)
-    # profile_id = create_profile("Test BIOS Settings", "ASRock X670E Taichi Carrara")
-    # if profile_id:
-    #     print(f"Created profile with ID: {profile_id}")
-    #     add_setting(profile_id, "CPU", "PBO", "Enhanced Mode 4", "str")
-    #     add_setting(profile_id, "Memory", "EXPO", "6000CL30", "str")
-    #     add_log_entry(profile_id, "Initial setup, testing stability.")
-    #     print(f"Settings for profile {profile_id}: {get_settings_for_profile(profile_id)}")
-    #     print(f"Logs for profile {profile_id}: {get_logs_for_profile(profile_id)}")
-    #     print(f"All profiles: {list_all_profiles()}")
-    #     update_profile(profile_id, description="ASRock X670E Taichi - Updated description")
-    #     print(f"Profile {profile_id} after update: {get_profile(profile_id)}")
-
-    # settings_list = get_settings_for_profile(profile_id)
-    # if settings_list:
-    #     setting_to_update_id = settings_list[0]['id']
-    #     update_setting_value(setting_to_update_id, "Disabled")
-    #     print(f"Settings for profile {profile_id} after update: {get_settings_for_profile(profile_id)}")
-
-    #     setting_to_delete_id = settings_list[1]['id']
-    #     delete_setting(setting_to_delete_id)
-    #     print(f"Settings for profile {profile_id} after delete: {get_settings_for_profile(profile_id)}")
-
-    # delete_profile(profile_id)
-    # print(f"All profiles after delete: {list_all_profiles()}")
-
 else:
     # Ensure DB is initialized when module is imported elsewhere
     init_db()
