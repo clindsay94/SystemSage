@@ -299,7 +299,7 @@ class EnvironmentScanner:
             return None
 
         # Resolve to absolute path for reliable checks
-        abs_exe_path = os.path.abspath(exe_path)
+        abs_exe_path = self._find_executable_in_path(exe_path) or os.path.abspath(exe_path)
 
         # FIX: Added a strict check to ensure we only try to execute valid program files.
         if self.system == "Windows":
