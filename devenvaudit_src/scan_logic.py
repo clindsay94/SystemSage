@@ -275,8 +275,11 @@ class EnvironmentScanner:
             )
             if process:
                 process.kill()
-                stdout, stderr_timeout = process.communicate()
-                return stdout, f"TimeoutExpired: {stderr_timeout}", -1
+                try:
+                    stdout, stderr_timeout = process.communicate(timeout=2)
+                    return stdout, f"TimeoutExpired: {stderr_timeout}", -1
+                except subprocess.TimeoutExpired:
+                    return "", "TimeoutExpired: Process killed but still did not respond.", -1
             return (
                 "",
                 "TimeoutExpired: Process creation might have failed before timeout or was already handled.",
@@ -292,17 +295,38 @@ class EnvironmentScanner:
     def _get_version_from_command(
         self, exe_path: str, version_args: List[str], version_regex_str: str
     ) -> Optional[str]:
-        # FIX: Added a strict check to ensure we only try to execute valid program files.
-        if self.system == "Windows" and not exe_path.lower().endswith(
-            (".exe", ".bat", ".cmd", ".ps1")
-        ):
+        if not exe_path:
             return None
 
-        if not exe_path or not os.path.exists(exe_path):
+        # Resolve to absolute path for reliable checks
+        abs_exe_path = os.path.abspath(exe_path)
+
+        # FIX: Added a strict check to ensure we only try to execute valid program files.
+        if self.system == "Windows":
+            if not abs_exe_path.lower().endswith((".exe", ".bat", ".cmd", ".ps1")):
+                logger.debug(
+                    f"Skipping version check for {abs_exe_path}: Not a valid Windows executable extension."
+                )
+                return None
+        else:
+            # For non-Windows, ensure it's actually executable
+            if os.path.exists(abs_exe_path) and not os.access(abs_exe_path, os.X_OK):
+                logger.debug(
+                    f"Skipping version check for {abs_exe_path}: File is not executable."
+                )
+                return None
+
+        if not os.path.isfile(abs_exe_path):
+            logger.debug(
+                f"Skipping version check for {abs_exe_path}: Not a file or does not exist."
+            )
             return None
 
         full_command = [exe_path] + version_args
         stdout, stderr, return_code = self._run_command(full_command)
+
+        if return_code == -1 and "TimeoutExpired" in stderr:
+            return None
 
         output_to_parse = ""
         if stdout:

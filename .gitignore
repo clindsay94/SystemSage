@@ -10,3 +10,6 @@
 /output/system_sage_inventory.md
 #Ignore pycache files
 .pyc
+__pycache__/
+*.py[cod]
+*$py.class
